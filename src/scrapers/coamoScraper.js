@@ -4,7 +4,10 @@ async function scrapeCoamo() {
   try {
     const url = "https://www.coamo.com.br/preco-do-dia/";
     console.log("Iniciando navegador Puppeteer");
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     const page = await browser.newPage();
 
     console.log("Acessando URL:", url);

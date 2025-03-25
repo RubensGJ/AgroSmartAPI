@@ -4,7 +4,10 @@ async function scrapeLarAgro() {
   try {
     const url = "https://www.lar.ind.br/lar-agro/agricola/#cotacao";
     console.log("Iniciando navegador Puppeteer");
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     const page = await browser.newPage();
 
     // Definindo o user agent
