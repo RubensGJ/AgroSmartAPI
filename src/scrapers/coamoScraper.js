@@ -22,6 +22,8 @@ async function scrapeCoamo() {
             data_hora: colunas[2]?.innerText.trim(),
             preco: colunas[3]?.innerText.trim(),
             unidade: colunas[4]?.innerText.trim(),
+            local:"Campo Mourão",
+            
           });
         }
       });
