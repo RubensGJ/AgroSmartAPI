@@ -6,9 +6,8 @@ async function scrapeCoamo() {
     console.log("Iniciando navegador Puppeteer");
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      executablePath: puppeteer.executablePath() // Use o caminho do Chrome instalado pelo Puppeteer
     });
-    
     const page = await browser.newPage();
 
     console.log("Acessando URL:", url);
@@ -27,8 +26,7 @@ async function scrapeCoamo() {
             data_hora: colunas[2]?.innerText.trim(),
             preco: colunas[3]?.innerText.trim(),
             unidade: colunas[4]?.innerText.trim(),
-            local:"Campo Mourão",
-            
+            local: "Campo Mourão",
           });
         }
       });

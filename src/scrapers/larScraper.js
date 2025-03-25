@@ -6,15 +6,9 @@ async function scrapeLarAgro() {
     console.log("Iniciando navegador Puppeteer");
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      executablePath: puppeteer.executablePath() // Use o caminho do Chrome instalado pelo Puppeteer
     });
-    
     const page = await browser.newPage();
-
-    // Definindo o user agent
-    const userAgent =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
-    await page.setUserAgent(userAgent);
 
     console.log("Acessando URL:", url);
     await page.goto(url, { waitUntil: "networkidle2" });
@@ -27,12 +21,11 @@ async function scrapeLarAgro() {
         if (colunas.length > 0) {
           dados.push({
             fornecedor: "Lar Agro",
-            grao: colunas[1]?.innerText.trim(),
-            descricao: "No Data", 
+            grao: colunas[0]?.innerText.trim(),
+            descricao: colunas[1]?.innerText.trim(),
             data_hora: colunas[2]?.innerText.trim(),
-            preco: colunas[4]?.innerText.trim(),
-            unidade: "SC",
-            local: colunas[0]?.innerText.trim()
+            preco: colunas[3]?.innerText.trim(),
+            unidade: colunas[4]?.innerText.trim(),
           });
         }
       });
@@ -43,7 +36,7 @@ async function scrapeLarAgro() {
     console.log("Cotações obtidas:", cotacoes);
     return cotacoes;
   } catch (error) {
-    console.error("Erro ao coletar cotações da Coamo:", error);
+    console.error("Erro ao coletar cotações da Lar Agro:", error);
     return [];
   }
 }
