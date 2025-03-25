@@ -22,6 +22,7 @@ async function scrapeLarAgro() {
         const colunas = row.querySelectorAll("td");
         if (colunas.length > 0) {
           dados.push({
+            fornecedor: "Lar Agro",
             grao: colunas[1]?.innerText.trim(),
             descricao: "No Data", 
             data_hora: colunas[2]?.innerText.trim(),

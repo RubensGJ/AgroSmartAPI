@@ -17,6 +17,7 @@ async function scrapeCoamo() {
         const colunas = row.querySelectorAll("td");
         if (colunas.length > 0) {
           dados.push({
+            fornecedor: "Coamo Agroindustrial Cooperativa",
             grao: colunas[0]?.innerText.trim(),
             descricao: colunas[1]?.innerText.trim(),
             data_hora: colunas[2]?.innerText.trim(),

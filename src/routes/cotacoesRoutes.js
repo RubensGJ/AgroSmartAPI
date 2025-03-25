@@ -28,4 +28,16 @@ router.get("/lar", async (req, res) => {
   }
 });
 
+router.get('/todos', async (req, res) => {
+  try {
+    const [coamoData, larAgroData] = await Promise.all([scrapeCoamo(), scrapeLarAgro()]);
+    res.json({
+      coamo: coamoData,
+      larAgro: larAgroData
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao executar os scrapers' });
+  }
+});
+
 module.exports = router;
