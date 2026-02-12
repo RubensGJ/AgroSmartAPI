@@ -4,4 +4,4 @@ node_modules/
 !.env.example
 erro.txt
 *.log
-RegistroDeExecução.md
+RegistroDeExecução

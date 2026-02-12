@@ -19,11 +19,11 @@ Criterio de pronto:
 - README bate com os scripts reais
 
 ## FASE 1 - ESTABILIDADE E CORRECAO FUNCIONAL (1 a 2 dias)
-- [ ] Rotas devem usar `cotacaoService` (hoje o cache existe mas nao e usado nas rotas)
-- [ ] Padronizar timeout (30s) em todas as chamadas externas
-- [ ] Padronizar erro: scraper nao pode engolir erro e retornar `[]` silenciosamente
-- [ ] Middleware global de erro no Express
-- [ ] Endpoint de health check `GET /health`
+- [🤖✅] Rotas devem usar `cotacaoService` (hoje o cache existe mas nao e usado nas rotas)
+- [✅] Padronizar timeout (30s) em todas as chamadas externas
+- [✅] Padronizar erro: scraper nao pode engolir erro e retornar `[]` silenciosamente
+- [🤖] Middleware global de erro no Express
+- [🤖] Endpoint de health check `GET /health`
 
 Criterio de pronto:
 - Cache de 5 min realmente ativo nas rotas
@@ -89,6 +89,7 @@ Criterio de pronto:
 - 5.5 a 8.5 dias uteis (dependendo da complexidade real dos sites no scraping sem browser)
 ## CONVENCOES DE COLABORACAO
 - Idioma padrao: portugues brasileiro (comentarios, logs e strings).
-- Toda alteracao deve ser registrada no `ToDo` com categoria e data.
+- Toda alteracao deve ser registrada no arquivo `RegistroDeExecu��o`, com categoria e data.
 - Categorias padrao: `Infraestrutura`, `API`, `Scraping`, `Seguranca`, `Persistencia`, `Testes`, `Documentacao`, `Observabilidade`.
+
 
