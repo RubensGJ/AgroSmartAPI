@@ -1,15 +1,14 @@
 const scrapeCoamo = require('../scrapers/coamoScraper');
 const scrapeLarAgro = require('../scrapers/larScraper');
+const AppError = require('../errors/AppError');
 
-// Simple in-memory cache to avoid launching Puppeteer on every request.
-// Cache structure: { value: any, expiresAt: timestamp }
 const cache = {
 	coamo: null,
 	lar: null,
 	all: null,
 };
 
-const CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
+const CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutos
 
 async function getCoamo(force = false) {
 	const now = Date.now();
@@ -18,6 +17,10 @@ async function getCoamo(force = false) {
 	}
 
 	const data = await scrapeCoamo();
+	if (!Array.isArray(data)) {
+		throw new AppError('Resposta inválida ao obter cotações da Coamo', 502);
+	}
+
 	cache.coamo = { value: data, expiresAt: now + CACHE_TTL_MS };
 	return data;
 }
@@ -29,6 +32,10 @@ async function getLar(force = false) {
 	}
 
 	const data = await scrapeLarAgro();
+	if (!Array.isArray(data)) {
+		throw new AppError('Resposta inválida ao obter cotações da LAR', 502);
+	}
+
 	cache.lar = { value: data, expiresAt: now + CACHE_TTL_MS };
 	return data;
 }

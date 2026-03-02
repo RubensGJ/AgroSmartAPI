@@ -20,16 +20,23 @@ Este projeto é uma API que busca cotações de grãos nos sites da Coamo e Lar 
     npm install
     ```
 
-3. Crie um arquivo `.env` na raiz do projeto e adicione suas variáveis de ambiente, se necessário.
+3. Crie seu arquivo `.env` a partir do exemplo:
+    ```sh
+    copy .env.example .env    ```
 
 ## Uso
 
-1. Inicie o servidor:
+1. Inicie em desenvolvimento (com reload):
+    ```sh
+    npm run dev
+    ``` 
+
+2. Para execucao normal:
     ```sh
     npm start
-    ```
+    ``` 
 
-2. Acesse a API em `http://localhost:3000`.
+3. Acesse a API em `http://localhost:3000`.
 
 ## Endpoints
 
