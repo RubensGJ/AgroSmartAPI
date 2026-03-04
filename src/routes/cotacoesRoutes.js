@@ -1,5 +1,5 @@
 const express = require("express");
-const { getCoamo, getLar, getAll } = require("../services/cotacaoService");
+const { getCoamo, getLar, getAll, getHistory } = require("../services/cotacaoService");
 
 const router = express.Router();
 
@@ -32,6 +32,18 @@ router.get(
   asyncHandler(async (req, res) => {
     const force = req.query.force === "true";
     const dados = await getAll(force);
+    res.json(dados);
+  })
+);
+
+router.get(
+  "/historico",
+  asyncHandler(async (req, res) => {
+    const fonte = (req.query.fonte || "all").toString().toLowerCase();
+    const parsedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(parsedLimit) ? parsedLimit : 50;
+
+    const dados = await getHistory(fonte, limit);
     res.json(dados);
   })
 );
