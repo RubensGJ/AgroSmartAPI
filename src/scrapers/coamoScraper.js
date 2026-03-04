@@ -2,7 +2,8 @@ const puppeteer = require("puppeteer");
 const AppError = require("../errors/AppError");
 
 const LOG_PREFIX = "[COAMO]";
-const TIMEOUT_PADRAO_MS = 30000;
+const TIMEOUT_PADRAO_MS = Number.parseInt(process.env.SCRAPER_NAV_TIMEOUT_MS, 10) || 90000;
+const TIMEOUT_SELETOR_MS = Number.parseInt(process.env.SCRAPER_SELECTOR_TIMEOUT_MS, 10) || 45000;
 
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
@@ -26,14 +27,15 @@ async function scrapeCoamo() {
     });
 
     const page = await browser.newPage();
+    await optimizePageRequests(page);
 
     console.log(`${LOG_PREFIX} Acessando URL:`, url);
-    await page.goto(url, { waitUntil: "networkidle2", timeout: TIMEOUT_PADRAO_MS });
+    await gotoWithFallback(page, url);
 
-    await page.waitForSelector("table tbody", { timeout: TIMEOUT_PADRAO_MS });
+    await page.waitForSelector("table tbody", { timeout: TIMEOUT_SELETOR_MS });
     await page.waitForFunction(
       () => document.querySelectorAll("table tbody tr").length > 0,
-      { timeout: TIMEOUT_PADRAO_MS }
+      { timeout: TIMEOUT_SELETOR_MS }
     );
 
     const totalLinhas = await page.$$eval("table tbody tr", (linhas) => linhas.length);
@@ -77,3 +79,34 @@ async function scrapeCoamo() {
 }
 
 module.exports = scrapeCoamo;
+
+async function optimizePageRequests(page) {
+  await page.setRequestInterception(true);
+  page.on("request", (request) => {
+    const type = request.resourceType();
+    if (type === "image" || type === "media" || type === "font") {
+      request.abort();
+      return;
+    }
+
+    request.continue();
+  });
+}
+
+function isTimeoutError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("timeout");
+}
+
+async function gotoWithFallback(page, url) {
+  try {
+    await page.goto(url, { waitUntil: "networkidle2", timeout: TIMEOUT_PADRAO_MS });
+  } catch (error) {
+    if (!isTimeoutError(error)) {
+      throw error;
+    }
+
+    console.warn(`${LOG_PREFIX} Timeout em networkidle2. Tentando domcontentloaded...`);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_PADRAO_MS });
+  }
+}

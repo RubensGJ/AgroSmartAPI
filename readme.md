@@ -39,6 +39,7 @@ Use o arquivo `.env.example` como base:
 
 ```env
 PORT=3000
+APP_TIMEZONE=America/Sao_Paulo
 AUTH_ENABLED=true
 API_TOKEN=troque-este-token-por-um-valor-seguro
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
@@ -48,6 +49,9 @@ SCHEDULER_ENABLED=true
 SCHEDULER_TIMEZONE=America/Sao_Paulo
 SCHEDULER_CRON_1=0 12 * * *
 SCHEDULER_CRON_2=0 15 * * *
+SCRAPER_PARALLEL_COLLECTION=false
+SCRAPER_NAV_TIMEOUT_MS=90000
+SCRAPER_SELECTOR_TIMEOUT_MS=45000
 SCRAPER_RETRY_MAX_ATTEMPTS=3
 SCRAPER_RETRY_DELAY_MS=180000
 ```
@@ -99,6 +103,7 @@ curl -H "Authorization: Bearer SEU_TOKEN" http://localhost:3000/api/cotacoes/tod
 1. Coleta bem-sucedida (manual ou agendada):
    - insere no historico (`cotacoes_historico`)
    - atualiza o ultimo snapshot por fonte (`cotacoes_ultima`)
+   - `coletado_em` e salvo com timezone de Brasilia por padrao (`America/Sao_Paulo`)
 2. Coleta com erro ou payload vazio:
    - nao salva
    - mantem o ultimo snapshot valido no banco e no cache
@@ -116,6 +121,8 @@ curl -H "Authorization: Bearer SEU_TOKEN" http://localhost:3000/api/cotacoes/tod
 
 - O scheduler (`node-cron`) roda dentro do processo da API.
 - Se o deploy tiver scale-to-zero/sleep, os jobs podem nao disparar enquanto o processo estiver parado.
+- Em infraestrutura pequena (ex.: plano free), prefira `SCRAPER_PARALLEL_COLLECTION=false`.
+- Se houver timeout de navegacao, aumente `SCRAPER_NAV_TIMEOUT_MS`.
 
 ## Licenca
 

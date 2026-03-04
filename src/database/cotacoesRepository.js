@@ -1,4 +1,5 @@
 const { query } = require("./db");
+const { getNowInBrasiliaISO } = require("../utils/dateTime");
 
 function parsePayload(payloadJson) {
   if (Array.isArray(payloadJson)) {
@@ -36,7 +37,7 @@ function mapSnapshotRow(row) {
 async function saveSnapshot({
   source,
   payload,
-  collectedAt = new Date().toISOString(),
+  collectedAt = getNowInBrasiliaISO(),
   slotLabel = null,
   triggerType = "manual",
 }) {
