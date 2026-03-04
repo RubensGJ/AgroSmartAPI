@@ -64,6 +64,17 @@ function normalizeError(source, error) {
   });
 }
 
+function isRetryableError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const knownNonRetryablePatterns = [
+    "could not find chrome",
+    "browser was not found",
+    "chrome executable",
+  ];
+
+  return !knownNonRetryablePatterns.some((pattern) => message.includes(pattern));
+}
+
 //valida resposta, se nao for array ou estiver vazio lanca um erro
 function validateScrapedData(source, data) {
   if (!Array.isArray(data)) {
@@ -127,6 +138,14 @@ async function collectSourceWithRetry(source, { triggerType = "manual", slotLabe
         return await persistSnapshot(source, data, { triggerType, slotLabel });
       } catch (error) {
         lastError = normalizeError(source, error);
+        const retryable = isRetryableError(error) && isRetryableError(lastError);
+
+        if (!retryable) {
+          console.error(
+            `[${source.toUpperCase()}] Falha nao-retriavel detectada (${lastError.message}). Encerrando tentativas.`
+          );
+          break;
+        }
 
         if (attempt < maxAttempts) {
           console.warn(

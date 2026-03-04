@@ -4,6 +4,7 @@ node_modules/
 !.env.example
 erro.txt
 *.log
+.cache/
 data/
 *.sqlite
 RegistroDeExecucaoToDo
