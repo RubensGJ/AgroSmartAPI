@@ -2,7 +2,8 @@ const puppeteer = require("puppeteer");
 const AppError = require("../errors/AppError");
 
 const LOG_PREFIX = "[LAR]";
-const TIMEOUT_PADRAO_MS = 30000;
+const TIMEOUT_PADRAO_MS = Number.parseInt(process.env.SCRAPER_NAV_TIMEOUT_MS, 10) || 90000;
+const TIMEOUT_SELETOR_MS = Number.parseInt(process.env.SCRAPER_SELECTOR_TIMEOUT_MS, 10) || 45000;
 
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
@@ -26,14 +27,15 @@ async function scrapeLarAgro() {
     });
 
     const page = await browser.newPage();
+    await optimizePageRequests(page);
 
-    // Define o user agent para simular navegador comum.
+    // Define user-agent para simular navegador comum.
     const userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     await page.setUserAgent(userAgent);
 
     console.log(`${LOG_PREFIX} Acessando URL:`, url);
-    await page.goto(url, { waitUntil: "networkidle2", timeout: TIMEOUT_PADRAO_MS });
+    await gotoWithFallback(page, url);
 
     const bloqueado = await detectarPaginaBloqueada(page);
     if (bloqueado) {
@@ -45,15 +47,14 @@ async function scrapeLarAgro() {
 
     const ok = await selectCotacaoAndSubmit(page);
     if (!ok) {
-      throw new AppError("Falha ao preencher formulário da LAR", 502, { origem: "lar" });
+      throw new AppError("Falha ao preencher formulario da LAR", 502, { origem: "lar" });
     }
 
     console.log(`${LOG_PREFIX} Aguardando a tabela carregar...`);
-    await page.waitForSelector("table tbody", { timeout: TIMEOUT_PADRAO_MS });
-    await page.waitForFunction(
-      () => document.querySelectorAll("table tbody tr").length > 0,
-      { timeout: TIMEOUT_PADRAO_MS }
-    );
+    await page.waitForSelector("table tbody", { timeout: TIMEOUT_SELETOR_MS });
+    await page.waitForFunction(() => document.querySelectorAll("table tbody tr").length > 0, {
+      timeout: TIMEOUT_SELETOR_MS,
+    });
 
     const cotacoes = await page.evaluate(() => {
       const dados = [];
@@ -63,7 +64,7 @@ async function scrapeLarAgro() {
           dados.push({
             fornecedor: "Lar Agro",
             grao: colunas[1]?.innerText.trim(),
-            descricao: "Sem descrição",
+            descricao: "Sem descricao",
             data_hora: colunas[2]?.innerText.trim(),
             preco: colunas[3]?.innerText.trim(),
             unidade: "SC",
@@ -74,16 +75,16 @@ async function scrapeLarAgro() {
       return dados;
     });
 
-    console.log(`${LOG_PREFIX} Cotações obtidas:`, cotacoes);
+    console.log(`${LOG_PREFIX} Cotacoes obtidas:`, cotacoes);
     return cotacoes;
   } catch (error) {
-    console.error(`${LOG_PREFIX} Erro ao coletar cotações da LAR:`, error);
+    console.error(`${LOG_PREFIX} Erro ao coletar cotacoes da LAR:`, error);
 
     if (error instanceof AppError) {
       throw error;
     }
 
-    throw new AppError("Falha ao coletar cotações da LAR", 502, {
+    throw new AppError("Falha ao coletar cotacoes da LAR", 502, {
       origem: "lar",
       causa: error.message,
     });
@@ -96,8 +97,38 @@ async function scrapeLarAgro() {
 }
 
 module.exports = scrapeLarAgro;
-// Exporta também a função auxiliar para testes/reuso.
 module.exports.selectCotacaoAndSubmit = selectCotacaoAndSubmit;
+
+async function optimizePageRequests(page) {
+  await page.setRequestInterception(true);
+  page.on("request", (request) => {
+    const type = request.resourceType();
+    if (type === "image" || type === "media" || type === "font") {
+      request.abort();
+      return;
+    }
+
+    request.continue();
+  });
+}
+
+function isTimeoutError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("timeout");
+}
+
+async function gotoWithFallback(page, url) {
+  try {
+    await page.goto(url, { waitUntil: "networkidle2", timeout: TIMEOUT_PADRAO_MS });
+  } catch (error) {
+    if (!isTimeoutError(error)) {
+      throw error;
+    }
+
+    console.warn(`${LOG_PREFIX} Timeout em networkidle2. Tentando domcontentloaded...`);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_PADRAO_MS });
+  }
+}
 
 async function detectarPaginaBloqueada(page) {
   const urlAtual = page.url() || "";
@@ -118,31 +149,33 @@ async function selectCotacaoAndSubmit(page, options = {}) {
   const { desiredText = "UNIDADE CAMPO GRANDE - MS", fallbackIndex = 48 } = options;
 
   try {
-    // Aguarda o menu suspenso carregar para selecionar a unidade.
-    await page.waitForSelector("select#cotacao", { timeout: TIMEOUT_PADRAO_MS });
+    await page.waitForSelector("select#cotacao", { timeout: TIMEOUT_SELETOR_MS });
 
-    const optionValue = await page.evaluate((desiredTextLocal, fallbackIdx) => {
-      const select = document.querySelector("select#cotacao");
-      if (!select) return null;
+    const optionValue = await page.evaluate(
+      (desiredTextLocal, fallbackIdx) => {
+        const select = document.querySelector("select#cotacao");
+        if (!select) return null;
 
-      const desiredOption = Array.from(select.options).find((option) =>
-        option.text.toUpperCase().includes(desiredTextLocal.toUpperCase())
-      );
+        const desiredOption = Array.from(select.options).find((option) =>
+          option.text.toUpperCase().includes(desiredTextLocal.toUpperCase())
+        );
 
-      if (desiredOption) return desiredOption.value;
-      if (select.options.length > fallbackIdx) return select.options[fallbackIdx].value;
-      return null;
-    }, desiredText, fallbackIndex);
+        if (desiredOption) return desiredOption.value;
+        if (select.options.length > fallbackIdx) return select.options[fallbackIdx].value;
+        return null;
+      },
+      desiredText,
+      fallbackIndex
+    );
 
     if (!optionValue) {
-      console.error(`${LOG_PREFIX} Não foi possível encontrar a opção desejada no menu suspenso.`);
+      console.error(`${LOG_PREFIX} Nao foi possivel encontrar a opcao desejada no menu suspenso.`);
       return false;
     }
 
-    console.log(`${LOG_PREFIX} Selecionando opção do menu suspenso:`, optionValue);
+    console.log(`${LOG_PREFIX} Selecionando opcao do menu suspenso:`, optionValue);
     await page.select("select#cotacao", optionValue);
 
-    // Preenche a data de referência no formato DD/MM/AAAA.
     const hoje = new Date();
     const dd = String(hoje.getDate()).padStart(2, "0");
     const mm = String(hoje.getMonth() + 1).padStart(2, "0");
@@ -164,23 +197,23 @@ async function selectCotacaoAndSubmit(page, options = {}) {
     }, dataStr);
 
     if (!filled) {
-      console.warn(`${LOG_PREFIX} Campo #dtb_yr não encontrado; prosseguindo sem preencher.`);
+      console.warn(`${LOG_PREFIX} Campo #dtb_yr nao encontrado; prosseguindo sem preencher.`);
     } else {
       console.log(`${LOG_PREFIX} Campo #dtb_yr preenchido com:`, dataStr);
     }
 
-    console.log(`${LOG_PREFIX} Buscando botão de envio...`);
+    console.log(`${LOG_PREFIX} Buscando botao de envio...`);
     await page.waitForSelector("form[action*='cotacao'] button[type='submit']", {
-      timeout: TIMEOUT_PADRAO_MS,
+      timeout: TIMEOUT_SELETOR_MS,
     });
 
     const botaoSubmit = await page.$("form[action*='cotacao'] button[type='submit']");
     if (!botaoSubmit) {
-      console.warn(`${LOG_PREFIX} Botão de envio não encontrado.`);
+      console.warn(`${LOG_PREFIX} Botao de envio nao encontrado.`);
       return false;
     }
 
-    console.log(`${LOG_PREFIX} Clicando no botão de envio...`);
+    console.log(`${LOG_PREFIX} Clicando no botao de envio...`);
     await botaoSubmit.click();
     return true;
   } catch (err) {

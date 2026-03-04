@@ -25,6 +25,19 @@ const inFlight = {
   lar: null,
 };
 
+function parseBoolean(value, defaultValue = false) {
+  if (value === undefined || value === null || value === "") {
+    return defaultValue;
+  }
+
+  const normalized = String(value).toLowerCase().trim();
+  return ["1", "true", "yes", "y", "on"].includes(normalized);
+}
+
+function shouldCollectInParallel() {
+  return parseBoolean(process.env.SCRAPER_PARALLEL_COLLECTION, false);
+}
+
 //Get Maximo tenativas do .env, se não definido será 3
 function getRetryMaxAttempts() {
   const value = Number.parseInt(process.env.SCRAPER_RETRY_MAX_ATTEMPTS, 10);
@@ -198,29 +211,64 @@ async function getLar(force = false) {
 
 //get tudo :D
 async function getAll(force = false) {
+  const runInParallel = shouldCollectInParallel();
+
   if (force) {
+    if (runInParallel) {
+      const [coamoData, larData] = await Promise.all([
+        collectSourceWithRetry("coamo", { triggerType: "manual" }),
+        collectSourceWithRetry("lar", { triggerType: "manual" }),
+      ]);
+
+      return { coamo: coamoData, larAgro: larData };
+    }
+
+    const coamoData = await collectSourceWithRetry("coamo", { triggerType: "manual" });
+    const larData = await collectSourceWithRetry("lar", { triggerType: "manual" });
+
+    return { coamo: coamoData, larAgro: larData };
+  }
+
+  if (runInParallel) {
     const [coamoData, larData] = await Promise.all([
-      collectSourceWithRetry("coamo", { triggerType: "manual" }),
-      collectSourceWithRetry("lar", { triggerType: "manual" }),
+      getSourceData("coamo", false),
+      getSourceData("lar", false),
     ]);
 
     return { coamo: coamoData, larAgro: larData };
   }
 
-  const [coamoData, larData] = await Promise.all([
-    getSourceData("coamo", false),
-    getSourceData("lar", false),
-  ]);
+  const coamoData = await getSourceData("coamo", false);
+  const larData = await getSourceData("lar", false);
 
   return { coamo: coamoData, larAgro: larData };
 }
 
 //coleta agendada, tenta coletar ambos, se falhar em um tenta coletar o outro, se ambos falharem lanca erro geral, mas informa qual falhou e qual conseguiu coletar, slotLabel é para identificar qual coleta agendada esta rodando, tipo 12:00 ou 15:00 ou a expressao cron caso seja personalizada
 async function refreshScheduled(slotLabel) {
-  const [coamoResult, larResult] = await Promise.allSettled([
-    collectSourceWithRetry("coamo", { triggerType: "scheduled", slotLabel }),
-    collectSourceWithRetry("lar", { triggerType: "scheduled", slotLabel }),
-  ]);
+  let coamoResult;
+  let larResult;
+
+  if (shouldCollectInParallel()) {
+    [coamoResult, larResult] = await Promise.allSettled([
+      collectSourceWithRetry("coamo", { triggerType: "scheduled", slotLabel }),
+      collectSourceWithRetry("lar", { triggerType: "scheduled", slotLabel }),
+    ]);
+  } else {
+    try {
+      const coamoData = await collectSourceWithRetry("coamo", { triggerType: "scheduled", slotLabel });
+      coamoResult = { status: "fulfilled", value: coamoData };
+    } catch (error) {
+      coamoResult = { status: "rejected", reason: error };
+    }
+
+    try {
+      const larData = await collectSourceWithRetry("lar", { triggerType: "scheduled", slotLabel });
+      larResult = { status: "fulfilled", value: larData };
+    } catch (error) {
+      larResult = { status: "rejected", reason: error };
+    }
+  }
 
   return {
     slotLabel,
