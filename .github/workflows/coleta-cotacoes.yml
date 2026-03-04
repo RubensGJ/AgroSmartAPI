@@ -1,0 +1,47 @@
+name: Coleta de Cotacoes
+
+on:
+  schedule:
+    # 12:05 e 15:05 no horario de Brasilia (UTC-3)
+    - cron: "5 15 * * *"
+    - cron: "5 18 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: coleta-cotacoes
+  cancel-in-progress: false
+
+jobs:
+  disparar-coleta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      API_TOKEN: ${{ secrets.API_TOKEN }}
+    steps:
+      - name: Validar variaveis obrigatorias
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "Secret API_BASE_URL nao configurada."
+            exit 1
+          fi
+
+          if [ -z "$API_TOKEN" ]; then
+            echo "Secret API_TOKEN nao configurada."
+            exit 1
+          fi
+
+      - name: Disparar coleta forcada
+        run: |
+          URL="${API_BASE_URL%/}/api/cotacoes/todos?force=true"
+          echo "Chamando endpoint: $URL"
+
+          curl -fsS \
+            --retry 4 \
+            --retry-all-errors \
+            --max-time 180 \
+            -H "Authorization: Bearer $API_TOKEN" \
+            "$URL"
+
+      - name: Confirmar execucao
+        run: echo "Coleta executada em $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
