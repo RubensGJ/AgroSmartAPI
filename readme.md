@@ -1,175 +1,106 @@
-# API de Cotação de Grãos
+# AgroSmart API
 
-Este projeto é uma API que busca cotações de grãos nos sites da Coamo e Lar Agro, retornando os dados em formato JSON.
+API Node.js para coleta e consulta de cotacoes de graos das cooperativas Coamo e LAR.
 
-## Pré-requisitos
+## Funcionalidades
 
-- Node.js
+- Coleta via scraping com Puppeteer.
+- Endpoints REST para consulta por fonte e consolidado.
+- Agendamento automatico (12:00 e 15:00, horario de Brasilia).
+- Retry automatico quando scraping falha ou retorna vazio.
+- Cache em memoria para respostas rapidas.
+- Persistencia em Neon/Postgres com historico e ultimo snapshot.
+
+## Stack
+
+- Node.js + Express
+- Puppeteer
+- node-cron
+- Postgres (Neon) via `pg`
+
+## Requisitos
+
+- Node.js 18 ou superior
 - npm
+- URL de conexao do Neon/Postgres
 
-## Instalação
+## Instalacao
 
-1. Clone o repositório:
-    ```sh
-    git clone <URL_DO_REPOSITORIO>
-    cd AgroSmartAPI
-    ```
+```bash
+git clone <URL_DO_REPOSITORIO>
+cd AgroSmartAPI
+npm install
+copy .env.example .env
+```
 
-2. Instale as dependências:
-    ```sh
-    npm install
-    ```
+## Variaveis de ambiente
 
-3. Crie seu arquivo `.env` a partir do exemplo:
-    ```sh
-    copy .env.example .env    ```
+Use o arquivo `.env.example` como base:
 
-## Uso
+```env
+PORT=3000
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
+DATABASE_SSL=true
+PUPPETEER_HEADLESS=true
+SCHEDULER_ENABLED=true
+SCHEDULER_TIMEZONE=America/Sao_Paulo
+SCHEDULER_CRON_1=0 12 * * *
+SCHEDULER_CRON_2=0 15 * * *
+SCRAPER_RETRY_MAX_ATTEMPTS=3
+SCRAPER_RETRY_DELAY_MS=180000
+```
 
-1. Inicie em desenvolvimento (com reload):
-    ```sh
-    npm run dev
-    ``` 
+## Execucao
 
-2. Para execucao normal:
-    ```sh
-    npm start
-    ``` 
+Desenvolvimento:
 
-3. Acesse a API em `http://localhost:3000`.
+```bash
+npm run dev
+```
+
+Producao:
+
+```bash
+npm start
+```
 
 ## Endpoints
 
-### GET /
+Base: `http://localhost:3000`
 
-Retorna uma mensagem indicando que a API está funcionando.
+- `GET /health`
+- `GET /api/cotacoes/coamo`
+- `GET /api/cotacoes/lar`
+- `GET /api/cotacoes/todos`
+- `GET /api/cotacoes/historico?fonte=all|coamo|lar&limit=50`
 
-### GET /api/cotacoes/coamo
+Parametro opcional:
 
-Busca as cotações de grãos no site da Coamo e retorna os dados em formato JSON.
+- `force=true` em `coamo`, `lar` e `todos` para ignorar cache e forcar nova coleta.
 
-#### Exemplo de resposta:
-```json
-[
-    {
-        "fornecedor": "Coamo Agroindustrial Cooperativa",
-        "grao": "Soja",
-        "descricao": "Soja Convencional",
-        "data_hora": "21/03/2025 10:00",
-        "preco": "R$ 150,00",
-        "unidade": "saca",
-        "local": "Campo Mourão"
-    },
-    {
-        "fornecedor": "Coamo Agroindustrial Cooperativa",
-        "grao": "Milho",
-        "descricao": "Milho Convencional",
-        "data_hora": "21/03/2025 10:00",
-        "preco": "R$ 70,00",
-        "unidade": "saca",
-        "local": "Campo Mourão"
-    }
-]
-```
+## Como funciona o salvamento
 
-### GET /api/cotacoes/lar
+1. Coleta bem-sucedida (manual ou agendada):
+   - insere no historico (`cotacoes_historico`)
+   - atualiza o ultimo snapshot por fonte (`cotacoes_ultima`)
+2. Coleta com erro ou payload vazio:
+   - nao salva
+   - mantem o ultimo snapshot valido no banco e no cache
 
-Busca as cotações de grãos no site da Lar Agro e retorna os dados em formato JSON.
+## Estrutura principal
 
-#### Exemplo de resposta:
+- `src/app.js`: bootstrap da API, banco e scheduler
+- `src/routes/cotacoesRoutes.js`: rotas HTTP
+- `src/services/cotacaoService.js`: regra de negocio, cache, retry e orquestracao
+- `src/jobs/cotacaoScheduler.js`: agendamento das coletas
+- `src/scrapers/`: scrapers Coamo e LAR
+- `src/database/`: conexao e repositorio Postgres
 
-```json
-[
-    {
-        "fornecedor": "Lar Agro",
-        "grao": "Soja",
-        "descricao": "No Data",
-        "data_hora": "21/03/2025 10:00",
-        "preco": "R$ 150,00",
-        "unidade": "SC",
-        "local": "Campo Mourão"
-    },
-    {
-        "fornecedor": "Lar Agro",
-        "grao": "Milho",
-        "descricao": "No Data",
-        "data_hora": "21/03/2025 10:00",
-        "preco": "R$ 70,00",
-        "unidade": "SC",
-        "local": "Campo Mourão"
-    }
-]
-```
+## Observacoes de deploy
 
-### GET /api/cotacoes/todos
+- O scheduler (`node-cron`) roda dentro do processo da API.
+- Se o deploy tiver scale-to-zero/sleep, os jobs podem nao disparar enquanto o processo estiver parado.
 
-Executa ambos os scrapers (Coamo e Lar Agro) em paralelo e retorna os dados combinados em formato JSON.
+## Licenca
 
-#### Exemplo de resposta:
-
-```json
-{
-    "coamo": [
-        {
-            "fornecedor": "Coamo Agroindustrial Cooperativa",
-            "grao": "Soja",
-            "descricao": "Soja Convencional",
-            "data_hora": "21/03/2025 10:00",
-            "preco": "R$ 150,00",
-            "unidade": "saca",
-            "local": "Campo Mourão"
-        },
-        {
-            "fornecedor": "Coamo Agroindustrial Cooperativa",
-            "grao": "Milho",
-            "descricao": "Milho Convencional",
-            "data_hora": "21/03/2025 10:00",
-            "preco": "R$ 70,00",
-            "unidade": "saca",
-            "local": "Campo Mourão"
-        }
-    ],
-    "larAgro": [
-        {
-            "fornecedor": "Lar Agro",
-            "grao": "Soja",
-            "descricao": "No Data",
-            "data_hora": "21/03/2025 10:00",
-            "preco": "R$ 150,00",
-            "unidade": "SC",
-            "local": "Campo Mourão"
-        },
-        {
-            "fornecedor": "Lar Agro",
-            "grao": "Milho",
-            "descricao": "No Data",
-            "data_hora": "21/03/2025 10:00",
-            "preco": "R$ 70,00",
-            "unidade": "SC",
-            "local": "Campo Mourão"
-        }
-    ]
-}
-```
-
-### Estrutura do Projeto
-
-- src/app.js: Arquivo principal que contém a lógica da API.
-- src/routes/cotacoesRoutes.js: Arquivo que define as rotas da API.
-- src/scrapers/coamoScraper.js: Arquivo que contém o scraper para o site da Coamo.
-- src/scrapers/larScraper.js: Arquivo que contém o scraper para o site da Lar Agro.
-- package.json: Arquivo de configuração do npm que lista as dependências do projeto.
-- .gitignore: Arquivo que especifica quais arquivos e diretórios devem ser ignorados pelo Git.
-
-### Dependências
-
-- express: Framework web para Node.js.
-- puppeteer: Biblioteca para controle de navegadores headless.
-- axios: Cliente HTTP para fazer requisições.
-- cheerio: Biblioteca para manipulação de HTML.
-- dotenv: Biblioteca para carregar variáveis de ambiente de um arquivo .env.
-- cors: Middleware para habilitar CORS (Cross-Origin Resource Sharing).
-
-### Licença
-
-Não sei sobre isso kkkkkkkk essa API pode facilmente ser ilegal;
+ISC
