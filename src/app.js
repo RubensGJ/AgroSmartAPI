@@ -21,6 +21,14 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    mensagem: "AgroSmart API online",
+    health: "/health",
+  });
+});
+
 app.use("/api/cotacoes", authenticateToken, cotacoesRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
