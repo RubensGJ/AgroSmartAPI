@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const cotacoesRoutes = require("./routes/cotacoesRoutes");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
+const { authenticateToken, validateAuthConfig } = require("./middlewares/authToken");
 const { initDatabase } = require("./database/db");
 const { bootstrapCotacoesCache } = require("./services/cotacaoService");
 const { startCotacaoScheduler } = require("./jobs/cotacaoScheduler");
@@ -20,11 +21,12 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use("/api/cotacoes", cotacoesRoutes);
+app.use("/api/cotacoes", authenticateToken, cotacoesRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 async function bootstrap() {
+  validateAuthConfig();
   await initDatabase();
   await bootstrapCotacoesCache();
 }

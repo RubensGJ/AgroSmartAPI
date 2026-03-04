@@ -39,6 +39,8 @@ Use o arquivo `.env.example` como base:
 
 ```env
 PORT=3000
+AUTH_ENABLED=true
+API_TOKEN=troque-este-token-por-um-valor-seguro
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
 DATABASE_SSL=true
 PUPPETEER_HEADLESS=true
@@ -77,6 +79,20 @@ Base: `http://localhost:3000`
 Parametro opcional:
 
 - `force=true` em `coamo`, `lar` e `todos` para ignorar cache e forcar nova coleta.
+
+## Autenticacao por token
+
+- Todas as rotas em `/api/cotacoes/*` exigem token quando `AUTH_ENABLED=true`.
+- A rota `/health` permanece publica.
+- Envie o token em um dos formatos:
+  - `Authorization: Bearer <API_TOKEN>`
+  - `x-api-token: <API_TOKEN>`
+
+Exemplo:
+
+```bash
+curl -H "Authorization: Bearer SEU_TOKEN" http://localhost:3000/api/cotacoes/todos
+```
 
 ## Como funciona o salvamento
 
