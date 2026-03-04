@@ -4,6 +4,15 @@ const AppError = require("../errors/AppError");
 const LOG_PREFIX = "[COAMO]";
 const TIMEOUT_PADRAO_MS = 30000;
 
+function parseBoolean(value, defaultValue = true) {
+  if (value === undefined || value === null || value === "") {
+    return defaultValue;
+  }
+
+  const normalized = String(value).toLowerCase().trim();
+  return ["1", "true", "yes", "y", "on"].includes(normalized);
+}
+
 async function scrapeCoamo() {
   let browser;
 
@@ -12,7 +21,7 @@ async function scrapeCoamo() {
     console.log(`${LOG_PREFIX} Iniciando navegador Puppeteer`);
 
     browser = await puppeteer.launch({
-      headless: false,
+      headless: parseBoolean(process.env.PUPPETEER_HEADLESS, true),
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
