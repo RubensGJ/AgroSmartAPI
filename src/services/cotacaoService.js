@@ -6,6 +6,7 @@ const {
   listSnapshots,
   saveSnapshot,
 } = require("../database/cotacoesRepository");
+const { getNowInBrasiliaISO } = require("../utils/dateTime");
 
 // Scrappers disponiveis
 const SOURCES = {
@@ -110,7 +111,7 @@ async function persistSnapshot(source, data, { triggerType = "manual", slotLabel
   const snapshot = await saveSnapshot({
     source,
     payload: data,
-    collectedAt: new Date().toISOString(),
+    collectedAt: getNowInBrasiliaISO(),
     slotLabel,
     triggerType,
   });

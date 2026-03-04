@@ -39,6 +39,7 @@ Use o arquivo `.env.example` como base:
 
 ```env
 PORT=3000
+APP_TIMEZONE=America/Sao_Paulo
 AUTH_ENABLED=true
 API_TOKEN=troque-este-token-por-um-valor-seguro
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
@@ -102,6 +103,7 @@ curl -H "Authorization: Bearer SEU_TOKEN" http://localhost:3000/api/cotacoes/tod
 1. Coleta bem-sucedida (manual ou agendada):
    - insere no historico (`cotacoes_historico`)
    - atualiza o ultimo snapshot por fonte (`cotacoes_ultima`)
+   - `coletado_em` e salvo com timezone de Brasilia por padrao (`America/Sao_Paulo`)
 2. Coleta com erro ou payload vazio:
    - nao salva
    - mantem o ultimo snapshot valido no banco e no cache
