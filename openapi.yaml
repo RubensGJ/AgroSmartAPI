@@ -1,0 +1,287 @@
+openapi: 3.0.3
+info:
+  title: AgroSmart API
+  version: 2.2.0
+  description: |
+    API para coleta e consulta de cotacoes de graos (Coamo e LAR),
+    com historico em banco e autenticacao por token.
+servers:
+  - url: http://localhost:3000
+    description: Ambiente local
+tags:
+  - name: Health
+    description: Rotas publicas de status da API
+  - name: Cotacoes
+    description: Consulta e coleta de cotacoes
+paths:
+  /:
+    get:
+      tags: [Health]
+      summary: Status basico da API
+      responses:
+        "200":
+          description: API online
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  mensagem:
+                    type: string
+                    example: AgroSmart API online
+                  health:
+                    type: string
+                    example: /health
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: API saudavel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  servico:
+                    type: string
+                    example: AgroSmart API
+                  timestamp:
+                    type: string
+                    format: date-time
+  /api/cotacoes/coamo:
+    get:
+      tags: [Cotacoes]
+      summary: Retorna cotacoes da Coamo
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+      responses:
+        "200":
+          description: Lista de cotacoes da Coamo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cotacao"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/cotacoes/lar:
+    get:
+      tags: [Cotacoes]
+      summary: Retorna cotacoes da LAR
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+      responses:
+        "200":
+          description: Lista de cotacoes da LAR
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cotacao"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/cotacoes/todos:
+    get:
+      tags: [Cotacoes]
+      summary: Retorna cotacoes de Coamo e LAR
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+      responses:
+        "200":
+          description: Cotacoes consolidadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CotacoesConsolidadas"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/cotacoes/historico:
+    get:
+      tags: [Cotacoes]
+      summary: Retorna historico de coletas
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - name: fonte
+          in: query
+          description: Fonte desejada
+          schema:
+            type: string
+            enum: [all, coamo, lar]
+            default: all
+        - name: limit
+          in: query
+          description: Quantidade maxima de registros (1..500)
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 500
+      responses:
+        "200":
+          description: Lista de snapshots de historico
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoricoSnapshot"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+    apiTokenHeader:
+      type: apiKey
+      in: header
+      name: x-api-token
+  parameters:
+    ForceParam:
+      name: force
+      in: query
+      description: Se true, ignora cache e força nova coleta
+      schema:
+        type: boolean
+        default: false
+  responses:
+    BadRequestError:
+      description: Erro de validacao da requisicao
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Fonte invalida. Use coamo, lar ou all.
+    UnauthorizedError:
+      description: Token ausente ou invalido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Token invalido.
+    InternalError:
+      description: Erro interno
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Falha ao coletar cotacoes da Coamo
+  schemas:
+    Cotacao:
+      type: object
+      properties:
+        fornecedor:
+          type: string
+          example: Coamo Agroindustrial Cooperativa
+        grao:
+          type: string
+          example: SOJA
+        descricao:
+          type: string
+          example: 60 KG
+        data_hora:
+          type: string
+          example: 05/03/2026 12:00
+        preco:
+          type: string
+          example: R$ 150,00
+        unidade:
+          type: string
+          example: SC
+        local:
+          type: string
+          example: Campo Mourao
+      required: [fornecedor, grao, descricao, data_hora, preco, unidade, local]
+    CotacoesConsolidadas:
+      type: object
+      properties:
+        coamo:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cotacao"
+        larAgro:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cotacao"
+      required: [coamo, larAgro]
+    HistoricoSnapshot:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        source:
+          type: string
+          enum: [coamo, lar]
+          example: coamo
+        payload:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cotacao"
+        itemCount:
+          type: integer
+          example: 12
+        collectedAt:
+          type: string
+          format: date-time
+          example: "2026-03-05T12:00:00-03:00"
+        slotLabel:
+          type: string
+          nullable: true
+          example: "12:00"
+        triggerType:
+          type: string
+          example: scheduled
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, source, payload, itemCount, collectedAt, triggerType]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Erro interno do servidor
+        details:
+          type: object
+          nullable: true
