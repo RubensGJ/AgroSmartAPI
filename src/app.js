@@ -1,6 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
 const cotacoesRoutes = require("./routes/cotacoesRoutes");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
 const { authenticateToken, validateAuthConfig } = require("./middlewares/authToken");
@@ -9,6 +12,8 @@ const { bootstrapCotacoesCache } = require("./services/cotacaoService");
 const { startCotacaoScheduler } = require("./jobs/cotacaoScheduler");
 
 const app = express();
+const OPENAPI_FILE = path.resolve(__dirname, "..", "openapi.yaml");
+const openApiDocument = YAML.load(OPENAPI_FILE);
 
 app.use(cors());
 app.use(express.json());
@@ -26,8 +31,14 @@ app.get("/", (req, res) => {
     status: "ok",
     mensagem: "AgroSmart API online",
     health: "/health",
+    docs: "/docs",
   });
 });
+
+app.get("/openapi.yaml", (req, res) => {
+  res.sendFile(OPENAPI_FILE);
+});
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
 app.use("/api/cotacoes", authenticateToken, cotacoesRoutes);
 app.use(notFoundHandler);

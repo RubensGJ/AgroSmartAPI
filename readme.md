@@ -6,6 +6,7 @@ API Node.js para coleta e consulta de cotacoes de graos das cooperativas Coamo e
 
 - Coleta via scraping com Puppeteer.
 - Endpoints REST para consulta por fonte e consolidado.
+- Documentacao OpenAPI com Swagger UI.
 - Agendamento automatico (12:00 e 15:00, horario de Brasilia).
 - Retry automatico quando scraping falha ou retorna vazio.
 - Cache em memoria para respostas rapidas.
@@ -74,7 +75,10 @@ npm start
 
 Base: `http://localhost:3000`
 
+- `GET /`
 - `GET /health`
+- `GET /docs` (Swagger UI)
+- `GET /openapi.yaml` (spec OpenAPI)
 - `GET /api/cotacoes/coamo`
 - `GET /api/cotacoes/lar`
 - `GET /api/cotacoes/todos`
@@ -97,6 +101,11 @@ Exemplo:
 ```bash
 curl -H "Authorization: Bearer SEU_TOKEN" http://localhost:3000/api/cotacoes/todos
 ```
+
+## Documentacao da API
+
+- Swagger UI: `http://localhost:3000/docs`
+- Arquivo OpenAPI: `openapi.yaml` (raiz do projeto)
 
 ## Como funciona o salvamento
 
