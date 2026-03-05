@@ -1,6 +1,6 @@
 {
   "name": "agrosmart-api",
-  "version": "2.2",
+  "version": "2.2.1",
   "description": "API para coleta e consulta de cotacoes de graos (Coamo e LAR) com historico em Neon/Postgres.",
   "main": "src/app.js",
   "scripts": {

@@ -1,6 +1,6 @@
 const { join } = require("path");
 
 module.exports = {
-  // Mantem o browser no diretorio do projeto (importante em plataformas como Render).
+  // Mantem o browser dentro do projeto para ficar disponivel no runtime do Render.
   cacheDirectory: join(__dirname, ".cache", "puppeteer"),
 };

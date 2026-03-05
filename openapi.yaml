@@ -1,13 +1,15 @@
 openapi: 3.0.3
 info:
   title: AgroSmart API
-  version: 2.2.0
+  version: 2.2.1
   description: |
     API para coleta e consulta de cotacoes de graos (Coamo e LAR),
     com historico em banco e autenticacao por token.
 servers:
   - url: http://localhost:3000
     description: Ambiente local
+  - url: https://agrosmartapi.onrender.com
+    description: Ambiente de producao
 tags:
   - name: Health
     description: Rotas publicas de status da API
