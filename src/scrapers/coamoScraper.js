@@ -1,9 +1,10 @@
 const puppeteer = require("puppeteer");
 const AppError = require("../errors/AppError");
+const { criarLogger } = require("../logs/logger");
 
-const LOG_PREFIX = "[COAMO]";
 const TIMEOUT_PADRAO_MS = Number.parseInt(process.env.SCRAPER_NAV_TIMEOUT_MS, 10) || 90000;
 const TIMEOUT_SELETOR_MS = Number.parseInt(process.env.SCRAPER_SELECTOR_TIMEOUT_MS, 10) || 45000;
+const logger = criarLogger("SCRAPER-COAMO");
 
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
@@ -19,7 +20,7 @@ async function scrapeCoamo() {
 
   try {
     const url = "https://www.coamo.com.br/preco-do-dia/";
-    console.log(`${LOG_PREFIX} Iniciando navegador Puppeteer`);
+    logger.info("Iniciando navegador Puppeteer.");
 
     browser = await puppeteer.launch({
       headless: parseBoolean(process.env.PUPPETEER_HEADLESS, true),
@@ -29,7 +30,7 @@ async function scrapeCoamo() {
     const page = await browser.newPage();
     await optimizePageRequests(page);
 
-    console.log(`${LOG_PREFIX} Acessando URL:`, url);
+    logger.info(`Acessando URL: ${url}`);
     await gotoWithFallback(page, url);
 
     await page.waitForSelector("table tbody", { timeout: TIMEOUT_SELETOR_MS });
@@ -39,7 +40,7 @@ async function scrapeCoamo() {
     );
 
     const totalLinhas = await page.$$eval("table tbody tr", (linhas) => linhas.length);
-    console.log(`${LOG_PREFIX} Tabela carregada com ${totalLinhas} linhas`);
+    logger.info(`Tabela carregada com ${totalLinhas} linhas.`);
 
     const cotacoes = await page.evaluate(() => {
       const dados = [];
@@ -54,7 +55,7 @@ async function scrapeCoamo() {
             data_hora: colunas[2]?.innerText.trim(),
             preco: colunas[3]?.innerText.trim(),
             unidade: colunas[4]?.innerText.trim(),
-            local: "Campo Mourão",
+            local: "Campo Mour\u00e3o",
           });
         }
       });
@@ -62,18 +63,18 @@ async function scrapeCoamo() {
       return dados;
     });
 
-    console.log(`${LOG_PREFIX} Cotações obtidas:`, cotacoes);
+    logger.sucesso(`Cotacoes obtidas com sucesso. Total: ${cotacoes.length}.`);
     return cotacoes;
   } catch (error) {
-    console.error(`${LOG_PREFIX} Erro ao coletar cotações da Coamo:`, error);
-    throw new AppError("Falha ao coletar cotações da Coamo", 502, {
+    logger.erro("Erro ao coletar cotacoes da Coamo.", error);
+    throw new AppError("Falha ao coletar cota\u00e7\u00f5es da Coamo", 502, {
       origem: "coamo",
       causa: error.message,
     });
   } finally {
     if (browser) {
       await browser.close();
-      console.log(`${LOG_PREFIX} Navegador encerrado`);
+      logger.info("Navegador encerrado.");
     }
   }
 }
@@ -106,7 +107,7 @@ async function gotoWithFallback(page, url) {
       throw error;
     }
 
-    console.warn(`${LOG_PREFIX} Timeout em networkidle2. Tentando domcontentloaded...`);
+    logger.aviso("Timeout em networkidle2. Tentando domcontentloaded.");
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_PADRAO_MS });
   }
 }

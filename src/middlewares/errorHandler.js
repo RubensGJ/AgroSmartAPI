@@ -1,7 +1,10 @@
 const AppError = require("../errors/AppError");
+const { criarLogger } = require("../logs/logger");
+
+const logger = criarLogger("API");
 
 function notFoundHandler(req, res, next) {
-  next(new AppError("Rota não encontrada", 404));
+  next(new AppError("Rota nao encontrada", 404));
 }
 
 function errorHandler(err, req, res, next) {
@@ -15,9 +18,9 @@ function errorHandler(err, req, res, next) {
   }
 
   if (statusCode >= 500) {
-    console.error("[API] Erro interno:", err);
+    logger.erro(`Erro interno em ${req.method} ${req.originalUrl}.`, err);
   } else {
-    console.warn("[API] Erro de requisição:", err.message);
+    logger.aviso(`Erro de requisicao em ${req.method} ${req.originalUrl}: ${err.message}`);
   }
 
   res.status(statusCode).json(response);

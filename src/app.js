@@ -6,17 +6,21 @@ const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const cotacoesRoutes = require("./routes/cotacoesRoutes");
 const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler");
+const { requestLogger } = require("./middlewares/requestLogger");
 const { authenticateToken, validateAuthConfig } = require("./middlewares/authToken");
 const { initDatabase } = require("./database/db");
 const { bootstrapCotacoesCache } = require("./services/cotacaoService");
 const { startCotacaoScheduler } = require("./jobs/cotacaoScheduler");
+const { criarLogger } = require("./logs/logger");
 
 const app = express();
 const OPENAPI_FILE = path.resolve(__dirname, "..", "openapi.yaml");
 const openApiDocument = YAML.load(OPENAPI_FILE);
+const logger = criarLogger("API");
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -45,9 +49,11 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 async function bootstrap() {
+  logger.info("Iniciando aplicacao.");
   validateAuthConfig();
   await initDatabase();
   await bootstrapCotacoesCache();
+  logger.sucesso("Aplicacao pronta para receber requisicoes.");
 }
 
 async function startServer() {
@@ -55,13 +61,13 @@ async function startServer() {
 
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    logger.sucesso(`Servidor rodando na porta ${PORT}.`);
   });
 
   startCotacaoScheduler();
 }
 
 startServer().catch((error) => {
-  console.error("[BOOT] Falha ao iniciar aplicacao:", error);
+  logger.erro("Falha ao iniciar aplicacao.", error);
   process.exit(1);
 });

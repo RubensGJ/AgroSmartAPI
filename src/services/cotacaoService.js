@@ -7,6 +7,9 @@ const {
   saveSnapshot,
 } = require("../database/cotacoesRepository");
 const { getNowInBrasiliaISO } = require("../utils/dateTime");
+const { criarLogger } = require("../logs/logger");
+
+const logger = criarLogger("COTACAO");
 
 // Scrappers disponiveis
 const SOURCES = {
@@ -117,6 +120,9 @@ async function persistSnapshot(source, data, { triggerType = "manual", slotLabel
   });
 
   cache[source] = snapshot;
+  logger.sucesso(
+    `Snapshot salvo para ${source} com ${data.length} itens. Tipo de disparo: ${triggerType}.`
+  );
   return data;
 }
 
@@ -127,6 +133,9 @@ async function loadLatestToCache(source) {
 
   if (snapshot) {
     cache[source] = snapshot;
+    logger.info(`Ultimo snapshot de ${source} carregado do banco com ${snapshot.itemCount} itens.`);
+  } else {
+    logger.aviso(`Nenhum snapshot encontrado no banco para ${source}.`);
   }
 
   return snapshot;
@@ -135,6 +144,7 @@ async function loadLatestToCache(source) {
 //tenta coletar dados, se nao conseguir tenta denovo, e denovo, e denovo ate dar o limite
 async function collectSourceWithRetry(source, { triggerType = "manual", slotLabel = null } = {}) {
   if (inFlight[source]) {
+    logger.info(`Coleta de ${source} ja esta em andamento. Reaproveitando execucao atual.`);
     return inFlight[source];
   }
 
@@ -147,29 +157,35 @@ async function collectSourceWithRetry(source, { triggerType = "manual", slotLabe
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
+        logger.info(
+          `Iniciando coleta de ${source}. Tentativa ${attempt} de ${maxAttempts}. Tipo: ${triggerType}.`
+        );
         const data = await sourceConfig.scraper();
         validateScrapedData(source, data);
+        logger.sucesso(`Coleta de ${source} concluida com ${data.length} itens.`);
         return await persistSnapshot(source, data, { triggerType, slotLabel });
       } catch (error) {
         lastError = normalizeError(source, error);
         const retryable = isRetryableError(error) && isRetryableError(lastError);
 
         if (!retryable) {
-          console.error(
-            `[${source.toUpperCase()}] Falha nao-retriavel detectada (${lastError.message}). Encerrando tentativas.`
+          logger.erro(
+            `Falha nao-retriavel na coleta de ${source}. Encerrando tentativas.`,
+            lastError
           );
           break;
         }
 
         if (attempt < maxAttempts) {
-          console.warn(
-            `[${source.toUpperCase()}] Tentativa ${attempt}/${maxAttempts} falhou (${lastError.message}). Nova tentativa em ${retryDelayMs}ms.`
+          logger.aviso(
+            `Coleta de ${source} falhou na tentativa ${attempt} de ${maxAttempts}. Nova tentativa em ${retryDelayMs}ms. Motivo: ${lastError.message}`
           );
           await sleep(retryDelayMs);
         }
       }
     }
 
+    logger.erro(`Coleta de ${source} falhou apos ${maxAttempts} tentativas.`, lastError);
     throw lastError;
   })();
 
@@ -185,18 +201,22 @@ async function getSourceData(source, force = false) {
   ensureSource(source);
 
   if (force) {
+    logger.info(`Coleta forcada solicitada para ${source}.`);
     return collectSourceWithRetry(source, { triggerType: "manual" });
   }
 
   if (cache[source]?.payload?.length) {
+    logger.info(`Usando cache em memoria para ${source}.`);
     return cache[source].payload;
   }
 
   const latestSnapshot = await loadLatestToCache(source);
   if (latestSnapshot?.payload?.length) {
+    logger.info(`Usando ultimo snapshot salvo no banco para ${source}.`);
     return latestSnapshot.payload;
   }
 
+  logger.aviso(`Sem cache disponivel para ${source}. Sera feita nova coleta.`);
   return collectSourceWithRetry(source, { triggerType: "manual" });
 }
 
@@ -247,6 +267,7 @@ async function getAll(force = false) {
 
 //coleta agendada, tenta coletar ambos, se falhar em um tenta coletar o outro, se ambos falharem lanca erro geral, mas informa qual falhou e qual conseguiu coletar, slotLabel é para identificar qual coleta agendada esta rodando, tipo 12:00 ou 15:00 ou a expressao cron caso seja personalizada
 async function refreshScheduled(slotLabel) {
+  logger.info(`Iniciando coleta agendada do horario ${slotLabel}.`);
   let coamoResult;
   let larResult;
 
@@ -297,6 +318,7 @@ async function getHistory(source = "all", limit = 50) {
 //coleta forçada para popular cache no boot da aplicação
 async function bootstrapCotacoesCache() {
   await Promise.all([loadLatestToCache("coamo"), loadLatestToCache("lar")]);
+  logger.sucesso("Carga inicial de cache concluida.");
 }
 
 module.exports = {
