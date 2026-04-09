@@ -1,6 +1,8 @@
 const { Pool } = require("pg");
+const { criarLogger } = require("../logs/logger");
 
 let pool = null;
+const logger = criarLogger("BANCO");
 
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
@@ -35,6 +37,8 @@ function getPool() {
     ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : false,
   });
 
+  logger.info("Pool de conexao com o banco criado.");
+
   return pool;
 }
 
@@ -43,6 +47,8 @@ async function query(text, params = []) {
 }
 
 async function initDatabase() {
+  logger.info("Garantindo estrutura do banco.");
+
   await query(`
     CREATE TABLE IF NOT EXISTS cotacoes_historico (
       id BIGSERIAL PRIMARY KEY,
@@ -72,6 +78,24 @@ async function initDatabase() {
       atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS logs_requisicoes (
+      id BIGSERIAL PRIMARY KEY,
+      metodo TEXT NOT NULL,
+      rota TEXT NOT NULL,
+      status_code INTEGER NOT NULL,
+      duracao_ms INTEGER NOT NULL,
+      criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+
+  await query(`
+    CREATE INDEX IF NOT EXISTS idx_logs_requisicoes_criado_em
+    ON logs_requisicoes(criado_em DESC)
+  `);
+
+  logger.sucesso("Estrutura do banco pronta.");
 }
 
 module.exports = { initDatabase, query };

@@ -1,5 +1,8 @@
 const cron = require("node-cron");
 const { refreshScheduled } = require("../services/cotacaoService");
+const { criarLogger } = require("../logs/logger");
+
+const logger = criarLogger("SCHEDULER");
 
 //helper
 function parseBoolean(value, defaultValue) {
@@ -29,7 +32,7 @@ function getSlotLabel(index, expression) {
 function startCotacaoScheduler() {
   const enabled = parseBoolean(process.env.SCHEDULER_ENABLED, true);
   if (!enabled) {
-    console.log("[SCHEDULER] Desabilitado via SCHEDULER_ENABLED.");
+    logger.aviso("Scheduler desabilitado via SCHEDULER_ENABLED.");
     return [];
   }
 
@@ -38,7 +41,7 @@ function startCotacaoScheduler() {
 
   for (const [index, expression] of getCronExpressions().entries()) {
     if (!cron.validate(expression)) {
-      console.error(`[SCHEDULER] Expressao cron invalida ignorada: "${expression}"`);
+      logger.erro(`Expressao cron invalida ignorada: "${expression}".`);
       continue;
     }
 
@@ -47,20 +50,24 @@ function startCotacaoScheduler() {
       expression,
       async () => {
         const startedAt = new Date().toISOString();
-        console.log(`[SCHEDULER] Iniciando coleta ${slotLabel}. startedAt=${startedAt}`);
+        logger.info(`Iniciando coleta agendada ${slotLabel}. Inicio: ${startedAt}.`);
 
         try {
           const result = await refreshScheduled(slotLabel);
-          console.log(`[SCHEDULER] Coleta ${slotLabel} finalizada: ${JSON.stringify(result)}`);
+          logger.sucesso(
+            `Coleta ${slotLabel} finalizada. Coamo: ${
+              result.coamo.ok ? `ok (${result.coamo.count} itens)` : `falhou (${result.coamo.error})`
+            }. LAR: ${result.lar.ok ? `ok (${result.lar.count} itens)` : `falhou (${result.lar.error})`}.`
+          );
         } catch (error) {
-          console.error(`[SCHEDULER] Falha geral na coleta ${slotLabel}:`, error);
+          logger.erro(`Falha geral na coleta agendada ${slotLabel}.`, error);
         }
       },
       { timezone }
     );
 
     jobs.push(job);
-    console.log(`[SCHEDULER] Job registrado: cron="${expression}", timezone="${timezone}"`);
+    logger.info(`Job registrado. Cron: "${expression}". Timezone: "${timezone}".`);
   }
 
   return jobs;

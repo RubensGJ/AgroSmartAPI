@@ -1,5 +1,8 @@
 const crypto = require("crypto");
 const AppError = require("../errors/AppError");
+const { criarLogger } = require("../logs/logger");
+
+const logger = criarLogger("AUTH");
 
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
@@ -45,6 +48,7 @@ function safeTokenCompare(incomingToken, configuredToken) {
 
 function validateAuthConfig() {
   if (!isAuthEnabled()) {
+    logger.aviso("Autenticacao desabilitada por configuracao.");
     return;
   }
 
@@ -65,12 +69,14 @@ function authenticateToken(req, res, next) {
 
   const incomingToken = extractToken(req);
   if (!incomingToken) {
+    logger.aviso(`Requisicao sem token em ${req.method} ${req.originalUrl}.`);
     return next(
       new AppError("Token obrigatorio. Use Authorization: Bearer <token> ou x-api-token.", 401)
     );
   }
 
   if (!safeTokenCompare(incomingToken, configuredToken)) {
+    logger.aviso(`Token invalido em ${req.method} ${req.originalUrl}.`);
     return next(new AppError("Token invalido.", 401));
   }
 
