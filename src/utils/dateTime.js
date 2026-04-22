@@ -1,5 +1,6 @@
 const DEFAULT_TIME_ZONE = "America/Sao_Paulo";
 
+// Calcula o offset GMT da timezone informada para montar uma data ISO correta.
 function getOffsetForTimeZone(date, timeZone) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -22,6 +23,7 @@ function getOffsetForTimeZone(date, timeZone) {
   return `${sign}${hours}:${minutes}`;
 }
 
+// Quebra uma data em partes textuais para remontar o horario local da aplicacao.
 function getDateTimeParts(date, timeZone) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
@@ -46,6 +48,7 @@ function getDateTimeParts(date, timeZone) {
   };
 }
 
+// Retorna o horario atual na timezone da aplicacao em formato ISO.
 function getNowInBrasiliaISO() {
   const now = new Date();
   const timeZone = process.env.APP_TIMEZONE || DEFAULT_TIME_ZONE;

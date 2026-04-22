@@ -4,6 +4,7 @@ const { criarLogger } = require("../logs/logger");
 let pool = null;
 const logger = criarLogger("BANCO");
 
+// Converte variaveis de ambiente textuais para booleano.
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
@@ -13,6 +14,7 @@ function parseBoolean(value, defaultValue = true) {
   return ["1", "true", "yes", "y", "on"].includes(normalized);
 }
 
+// Decide se a conexao com o banco deve usar SSL.
 function shouldUseSsl(connectionString) {
   const explicit = process.env.DATABASE_SSL;
   if (explicit !== undefined) {
@@ -22,6 +24,7 @@ function shouldUseSsl(connectionString) {
   return connectionString.includes("neon.tech");
 }
 
+// Cria o pool do Postgres uma unica vez e reaproveita nas proximas consultas.
 function getPool() {
   if (pool) {
     return pool;
@@ -42,10 +45,12 @@ function getPool() {
   return pool;
 }
 
+// Executa uma query simples usando o pool compartilhado da aplicacao.
 async function query(text, params = []) {
   return getPool().query(text, params);
 }
 
+// Garante que as tabelas e indices usados pela API existam no banco.
 async function initDatabase() {
   logger.info("Garantindo estrutura do banco.");
 

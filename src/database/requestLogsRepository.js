@@ -1,5 +1,6 @@
 const { query } = require("./db");
 
+// Salva no banco apenas os dados principais da requisicao HTTP concluida.
 async function saveRequestLog({ metodo, rota, statusCode, duracaoMs }) {
   await query(
     `

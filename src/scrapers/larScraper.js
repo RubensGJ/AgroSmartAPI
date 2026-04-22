@@ -6,6 +6,7 @@ const TIMEOUT_PADRAO_MS = Number.parseInt(process.env.SCRAPER_NAV_TIMEOUT_MS, 10
 const TIMEOUT_SELETOR_MS = Number.parseInt(process.env.SCRAPER_SELECTOR_TIMEOUT_MS, 10) || 45000;
 const logger = criarLogger("SCRAPER-LAR");
 
+// Converte flags textuais do .env para booleano no Puppeteer.
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
@@ -15,6 +16,7 @@ function parseBoolean(value, defaultValue = true) {
   return ["1", "true", "yes", "y", "on"].includes(normalized);
 }
 
+// Abre o site da LAR, preenche o formulario e devolve a tabela de cotacoes.
 async function scrapeLarAgro() {
   let browser;
 
@@ -99,6 +101,7 @@ async function scrapeLarAgro() {
 module.exports = scrapeLarAgro;
 module.exports.selectCotacaoAndSubmit = selectCotacaoAndSubmit;
 
+// Bloqueia recursos pesados da pagina para a coleta ficar mais leve.
 async function optimizePageRequests(page) {
   await page.setRequestInterception(true);
   page.on("request", (request) => {
@@ -112,11 +115,13 @@ async function optimizePageRequests(page) {
   });
 }
 
+// Detecta se o erro recebido foi de timeout durante a navegacao.
 function isTimeoutError(error) {
   const message = String(error?.message || "").toLowerCase();
   return message.includes("timeout");
 }
 
+// Tenta carregar a pagina com uma estrategia secundaria se a primeira expirar.
 async function gotoWithFallback(page, url) {
   try {
     await page.goto(url, { waitUntil: "networkidle2", timeout: TIMEOUT_PADRAO_MS });
@@ -130,6 +135,7 @@ async function gotoWithFallback(page, url) {
   }
 }
 
+// Detecta bloqueios do provedor antes de continuar a automacao da pagina.
 async function detectarPaginaBloqueada(page) {
   const urlAtual = page.url() || "";
   if (urlAtual.includes("errors.edgesuite.net")) {
@@ -145,6 +151,7 @@ async function detectarPaginaBloqueada(page) {
   return conteudo.includes("errors.edgesuite.net");
 }
 
+// Seleciona a unidade desejada no formulario e envia a consulta para carregar a tabela.
 async function selectCotacaoAndSubmit(page, options = {}) {
   const { desiredText = "UNIDADE CAMPO GRANDE - MS", fallbackIndex = 48 } = options;
 

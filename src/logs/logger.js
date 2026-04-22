@@ -1,7 +1,9 @@
+// Gera o timestamp padrao usado em todas as mensagens de log.
 function getTimestamp() {
   return new Date().toISOString();
 }
 
+// Extrai uma mensagem legivel quando o log recebe um erro.
 function getMensagemErro(error) {
   if (!error) {
     return "";
@@ -18,6 +20,7 @@ function getMensagemErro(error) {
   return String(error);
 }
 
+// Escreve uma linha de log com formato padronizado no console.
 function escrever(nivel, contexto, mensagem, error = null) {
   const linha = `[${getTimestamp()}] [${nivel}] [${contexto}] ${mensagem}`;
   const detalheErro = getMensagemErro(error);
@@ -35,6 +38,7 @@ function escrever(nivel, contexto, mensagem, error = null) {
   }
 }
 
+// Cria um objeto de log com o contexto informado para reutilizar no projeto.
 function criarLogger(contexto) {
   return {
     info(mensagem) {

@@ -1,18 +1,22 @@
 openapi: 3.0.3
 info:
   title: AgroSmart API
-  version: 2.3.0
+  version: 3.0.0
   description: |
     API para coleta e consulta de cotacoes de graos (Coamo e LAR),
     com historico em banco e autenticacao por token.
 servers:
   - url: https://agrosmartapi.onrender.com
     description: Ambiente de producao
+  - url: http://localhost:3000
+    description: Ambiente de desenvolvimento
 tags:
   - name: Health
     description: Rotas publicas de status da API
   - name: Cotacoes
-    description: Consulta e coleta de cotacoes
+    description: Consulta e coleta direta de cotacoes
+  - name: Utils
+    description: Rotas auxiliares, analiticas e de exportacao
 paths:
   /:
     get:
@@ -122,7 +126,7 @@ paths:
           $ref: "#/components/responses/InternalError"
   /api/cotacoes/filtro:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Filtra cotacoes atuais por fonte e texto
       security:
         - bearerAuth: []
@@ -168,7 +172,7 @@ paths:
           $ref: "#/components/responses/InternalError"
   /api/cotacoes/melhor-preco:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Retorna a cotacao atual com maior preco para o filtro informado
       security:
         - bearerAuth: []
@@ -209,7 +213,7 @@ paths:
           $ref: "#/components/responses/NotFoundError"
   /api/cotacoes/comparativo:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Compara o melhor preco atual entre Coamo e LAR
       security:
         - bearerAuth: []
@@ -244,7 +248,7 @@ paths:
           $ref: "#/components/responses/NotFoundError"
   /api/cotacoes/variacao:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Calcula a variacao historica de um grao em uma fonte
       security:
         - bearerAuth: []
@@ -299,7 +303,7 @@ paths:
           $ref: "#/components/responses/NotFoundError"
   /api/cotacoes/periodo:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Consulta historico de cotacoes por periodo
       security:
         - bearerAuth: []
@@ -351,7 +355,7 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
   /api/cotacoes/exportar:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Exporta cotacoes atuais filtradas em CSV
       security:
         - bearerAuth: []
@@ -389,7 +393,7 @@ paths:
           $ref: "#/components/responses/NotFoundError"
   /api/cotacoes/historico:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Retorna historico de coletas
       security:
         - bearerAuth: []
