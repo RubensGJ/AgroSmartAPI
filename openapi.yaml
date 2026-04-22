@@ -1,18 +1,22 @@
 openapi: 3.0.3
 info:
   title: AgroSmart API
-  version: 2.3.0
+  version: 3.0.0
   description: |
     API para coleta e consulta de cotacoes de graos (Coamo e LAR),
     com historico em banco e autenticacao por token.
 servers:
   - url: https://agrosmartapi.onrender.com
     description: Ambiente de producao
+  - url: http://localhost:3000
+    description: Ambiente de desenvolvimento
 tags:
   - name: Health
     description: Rotas publicas de status da API
   - name: Cotacoes
-    description: Consulta e coleta de cotacoes
+    description: Consulta e coleta direta de cotacoes
+  - name: Utils
+    description: Rotas auxiliares, analiticas e de exportacao
 paths:
   /:
     get:
@@ -120,9 +124,276 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/cotacoes/filtro:
+    get:
+      tags: [Utils]
+      summary: Filtra cotacoes atuais por fonte e texto
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+        - name: fonte
+          in: query
+          schema:
+            type: string
+            enum: [all, coamo, lar]
+            default: all
+        - name: grao
+          in: query
+          schema:
+            type: string
+        - name: local
+          in: query
+          schema:
+            type: string
+        - name: descricao
+          in: query
+          schema:
+            type: string
+        - name: fornecedor
+          in: query
+          schema:
+            type: string
+        - name: unidade
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cotacoes filtradas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FiltroResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/cotacoes/melhor-preco:
+    get:
+      tags: [Utils]
+      summary: Retorna a cotacao atual com maior preco para o filtro informado
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+        - name: fonte
+          in: query
+          schema:
+            type: string
+            enum: [all, coamo, lar]
+            default: all
+        - name: grao
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: local
+          in: query
+          schema:
+            type: string
+        - name: descricao
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Melhor preco encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MelhorPrecoResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /api/cotacoes/comparativo:
+    get:
+      tags: [Utils]
+      summary: Compara o melhor preco atual entre Coamo e LAR
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+        - name: grao
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: local
+          in: query
+          schema:
+            type: string
+        - name: descricao
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comparativo entre as fontes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComparativoResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /api/cotacoes/variacao:
+    get:
+      tags: [Utils]
+      summary: Calcula a variacao historica de um grao em uma fonte
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - name: fonte
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [coamo, lar]
+        - name: grao
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: local
+          in: query
+          schema:
+            type: string
+        - name: descricao
+          in: query
+          schema:
+            type: string
+        - name: dataInicio
+          in: query
+          schema:
+            type: string
+            example: "2026-04-01"
+        - name: dataFim
+          in: query
+          schema:
+            type: string
+            example: "2026-04-10"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 500
+      responses:
+        "200":
+          description: Variacao calculada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariacaoResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+  /api/cotacoes/periodo:
+    get:
+      tags: [Utils]
+      summary: Consulta historico de cotacoes por periodo
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - name: fonte
+          in: query
+          schema:
+            type: string
+            enum: [all, coamo, lar]
+            default: all
+        - name: grao
+          in: query
+          schema:
+            type: string
+        - name: local
+          in: query
+          schema:
+            type: string
+        - name: descricao
+          in: query
+          schema:
+            type: string
+        - name: dataInicio
+          in: query
+          schema:
+            type: string
+            example: "2026-04-01"
+        - name: dataFim
+          in: query
+          schema:
+            type: string
+            example: "2026-04-10"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 500
+      responses:
+        "200":
+          description: Itens historicos encontrados no periodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeriodoResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /api/cotacoes/exportar:
+    get:
+      tags: [Utils]
+      summary: Exporta cotacoes atuais filtradas em CSV
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+        - name: fonte
+          in: query
+          schema:
+            type: string
+            enum: [all, coamo, lar]
+            default: all
+        - name: grao
+          in: query
+          schema:
+            type: string
+        - name: local
+          in: query
+          schema:
+            type: string
+        - name: descricao
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Arquivo CSV gerado
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
   /api/cotacoes/historico:
     get:
-      tags: [Cotacoes]
+      tags: [Utils]
       summary: Retorna historico de coletas
       security:
         - bearerAuth: []
@@ -193,6 +464,14 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
           example:
             error: Token invalido.
+    NotFoundError:
+      description: Nenhum registro encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Nenhuma cotacao encontrada para o filtro informado.
     InternalError:
       description: Erro interno
       content:
@@ -239,6 +518,198 @@ components:
           items:
             $ref: "#/components/schemas/Cotacao"
       required: [coamo, larAgro]
+    CotacaoComFonte:
+      allOf:
+        - $ref: "#/components/schemas/Cotacao"
+        - type: object
+          properties:
+            fonte:
+              type: string
+              enum: [coamo, lar]
+              example: coamo
+          required: [fonte]
+    CotacaoAnalitica:
+      allOf:
+        - $ref: "#/components/schemas/CotacaoComFonte"
+        - type: object
+          properties:
+            precoNumerico:
+              type: number
+              example: 112
+          required: [precoNumerico]
+    FiltroResponse:
+      type: object
+      properties:
+        fonte:
+          type: string
+          enum: [all, coamo, lar]
+        total:
+          type: integer
+          example: 2
+        filtros:
+          type: object
+          additionalProperties: true
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/CotacaoComFonte"
+      required: [fonte, total, filtros, itens]
+    MelhorPrecoResponse:
+      type: object
+      properties:
+        fonte:
+          type: string
+          enum: [all, coamo, lar]
+        criterio:
+          type: string
+          example: maior_preco
+        totalConsiderado:
+          type: integer
+          example: 2
+        filtros:
+          type: object
+          additionalProperties: true
+        item:
+          $ref: "#/components/schemas/CotacaoAnalitica"
+      required: [fonte, criterio, totalConsiderado, filtros, item]
+    ComparativoDiferenca:
+      type: object
+      properties:
+        valor:
+          type: number
+          nullable: true
+          example: 4.5
+        percentual:
+          type: number
+          nullable: true
+          example: 4.19
+        melhorFonte:
+          type: string
+          nullable: true
+          example: coamo
+    ComparativoResponse:
+      type: object
+      properties:
+        filtros:
+          type: object
+          additionalProperties: true
+        coamo:
+          allOf:
+            - $ref: "#/components/schemas/CotacaoAnalitica"
+          nullable: true
+        lar:
+          allOf:
+            - $ref: "#/components/schemas/CotacaoAnalitica"
+          nullable: true
+        diferenca:
+          $ref: "#/components/schemas/ComparativoDiferenca"
+      required: [filtros, diferenca]
+    PeriodoInfo:
+      type: object
+      properties:
+        dataInicio:
+          type: string
+          format: date-time
+          nullable: true
+        dataFim:
+          type: string
+          format: date-time
+          nullable: true
+    PeriodoItem:
+      allOf:
+        - $ref: "#/components/schemas/CotacaoAnalitica"
+        - type: object
+          properties:
+            snapshotId:
+              type: integer
+              example: 10
+            collectedAt:
+              type: string
+              format: date-time
+            slotLabel:
+              type: string
+              nullable: true
+            triggerType:
+              type: string
+              example: scheduled
+          required: [snapshotId, collectedAt, triggerType]
+    PeriodoResponse:
+      type: object
+      properties:
+        fonte:
+          type: string
+          enum: [all, coamo, lar]
+        filtros:
+          type: object
+          additionalProperties: true
+        periodo:
+          $ref: "#/components/schemas/PeriodoInfo"
+        totalSnapshots:
+          type: integer
+          example: 10
+        totalItens:
+          type: integer
+          example: 37
+        itens:
+          type: array
+          items:
+            $ref: "#/components/schemas/PeriodoItem"
+      required: [fonte, filtros, periodo, totalSnapshots, totalItens, itens]
+    VariacaoPonto:
+      type: object
+      properties:
+        snapshotId:
+          type: integer
+          example: 10
+        collectedAt:
+          type: string
+          format: date-time
+        slotLabel:
+          type: string
+          nullable: true
+        triggerType:
+          type: string
+        preco:
+          type: string
+          example: R$ 112,00
+        precoNumerico:
+          type: number
+          example: 112
+        item:
+          $ref: "#/components/schemas/CotacaoComFonte"
+      required: [snapshotId, collectedAt, triggerType, preco, precoNumerico, item]
+    VariacaoResponse:
+      type: object
+      properties:
+        fonte:
+          type: string
+          enum: [coamo, lar]
+        filtros:
+          type: object
+          additionalProperties: true
+        periodo:
+          $ref: "#/components/schemas/PeriodoInfo"
+        totalPontos:
+          type: integer
+          example: 10
+        primeiro:
+          $ref: "#/components/schemas/VariacaoPonto"
+        ultimo:
+          $ref: "#/components/schemas/VariacaoPonto"
+        variacao:
+          type: object
+          properties:
+            valor:
+              type: number
+              nullable: true
+            percentual:
+              type: number
+              nullable: true
+        historico:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariacaoPonto"
+      required: [fonte, filtros, periodo, totalPontos, primeiro, ultimo, variacao, historico]
     HistoricoSnapshot:
       type: object
       properties:

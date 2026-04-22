@@ -1,6 +1,7 @@
 const { query } = require("./db");
 const { getNowInBrasiliaISO } = require("../utils/dateTime");
 
+// Converte o JSON salvo no banco para um array padrao usado pelos services.
 function parsePayload(payloadJson) {
   if (Array.isArray(payloadJson)) {
     return payloadJson;
@@ -18,6 +19,7 @@ function parsePayload(payloadJson) {
   }
 }
 
+// Mapeia uma linha do banco para o formato de snapshot usado na aplicacao.
 function mapSnapshotRow(row) {
   if (!row) return null;
 
@@ -34,6 +36,7 @@ function mapSnapshotRow(row) {
   };
 }
 
+// Salva um novo snapshot no historico e atualiza a tabela com a ultima coleta.
 async function saveSnapshot({
   source,
   payload,
@@ -85,6 +88,7 @@ async function saveSnapshot({
   };
 }
 
+// Busca o snapshot mais recente de uma fonte especifica.
 async function getLatestSnapshot(source) {
   const result = await query(
     `
@@ -99,6 +103,7 @@ async function getLatestSnapshot(source) {
   return mapSnapshotRow(row);
 }
 
+// Lista snapshots mais recentes, com ou sem filtro por fonte.
 async function listSnapshots({ source = null, limit = 50 }) {
   const parsedLimit = Number(limit);
   const safeLimit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 50;
@@ -127,8 +132,48 @@ async function listSnapshots({ source = null, limit = 50 }) {
   return result.rows.map(mapSnapshotRow);
 }
 
+// Lista snapshots dentro de um periodo para montar consultas historicas.
+async function listSnapshotsByPeriod({ source = null, startDate = null, endDate = null, limit = 500 }) {
+  const parsedLimit = Number(limit);
+  const safeLimit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 2000) : 500;
+  const values = [];
+  const conditions = [];
+
+  if (source) {
+    values.push(source);
+    conditions.push(`fonte = $${values.length}`);
+  }
+
+  if (startDate) {
+    values.push(startDate);
+    conditions.push(`coletado_em >= $${values.length}`);
+  }
+
+  if (endDate) {
+    values.push(endDate);
+    conditions.push(`coletado_em <= $${values.length}`);
+  }
+
+  values.push(safeLimit);
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const result = await query(
+    `
+      SELECT id, fonte, dados_json, quantidade_itens, coletado_em, janela_horario, tipo_disparo, criado_em
+      FROM cotacoes_historico
+      ${whereClause}
+      ORDER BY coletado_em ASC, id ASC
+      LIMIT $${values.length}
+    `,
+    values
+  );
+
+  return result.rows.map(mapSnapshotRow);
+}
+
 module.exports = {
   getLatestSnapshot,
   listSnapshots,
+  listSnapshotsByPeriod,
   saveSnapshot,
 };

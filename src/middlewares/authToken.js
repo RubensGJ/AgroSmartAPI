@@ -4,6 +4,7 @@ const { criarLogger } = require("../logs/logger");
 
 const logger = criarLogger("AUTH");
 
+// Converte valores do .env para booleano no fluxo de autenticacao.
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
@@ -13,14 +14,17 @@ function parseBoolean(value, defaultValue = true) {
   return ["1", "true", "yes", "y", "on"].includes(normalized);
 }
 
+// Informa se a validacao de token esta habilitada.
 function isAuthEnabled() {
   return parseBoolean(process.env.AUTH_ENABLED, true);
 }
 
+// Le o token oficial configurado no servidor.
 function getConfiguredToken() {
   return (process.env.API_TOKEN || "").trim();
 }
 
+// Tenta encontrar o token enviado pelo cliente nos headers suportados.
 function extractToken(req) {
   const authorization = req.headers.authorization || "";
   if (authorization.startsWith("Bearer ")) {
@@ -35,6 +39,7 @@ function extractToken(req) {
   return "";
 }
 
+// Compara os tokens de forma segura para evitar vazamento por tempo de resposta.
 function safeTokenCompare(incomingToken, configuredToken) {
   const incomingBuffer = Buffer.from(incomingToken);
   const configuredBuffer = Buffer.from(configuredToken);
@@ -46,6 +51,7 @@ function safeTokenCompare(incomingToken, configuredToken) {
   return crypto.timingSafeEqual(incomingBuffer, configuredBuffer);
 }
 
+// Valida a configuracao de autenticacao ainda na subida da aplicacao.
 function validateAuthConfig() {
   if (!isAuthEnabled()) {
     logger.aviso("Autenticacao desabilitada por configuracao.");
@@ -57,6 +63,7 @@ function validateAuthConfig() {
   }
 }
 
+// Middleware que protege as rotas exigindo um token valido.
 function authenticateToken(req, res, next) {
   if (!isAuthEnabled()) {
     return next();

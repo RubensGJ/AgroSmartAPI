@@ -3,10 +3,12 @@ const { criarLogger } = require("../logs/logger");
 
 const logger = criarLogger("API");
 
+// Transforma qualquer rota inexistente em um erro 404 padronizado.
 function notFoundHandler(req, res, next) {
   next(new AppError("Rota nao encontrada", 404));
 }
 
+// Converte erros da aplicacao para respostas HTTP consistentes.
 function errorHandler(err, req, res, next) {
   const statusCode = err.statusCode || 500;
   const response = {
