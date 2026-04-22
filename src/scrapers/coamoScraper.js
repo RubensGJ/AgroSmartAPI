@@ -6,6 +6,7 @@ const TIMEOUT_PADRAO_MS = Number.parseInt(process.env.SCRAPER_NAV_TIMEOUT_MS, 10
 const TIMEOUT_SELETOR_MS = Number.parseInt(process.env.SCRAPER_SELECTOR_TIMEOUT_MS, 10) || 45000;
 const logger = criarLogger("SCRAPER-COAMO");
 
+// Converte flags textuais do .env para booleano no Puppeteer.
 function parseBoolean(value, defaultValue = true) {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
@@ -15,6 +16,7 @@ function parseBoolean(value, defaultValue = true) {
   return ["1", "true", "yes", "y", "on"].includes(normalized);
 }
 
+// Abre o site da Coamo, extrai a tabela e devolve as cotacoes encontradas.
 async function scrapeCoamo() {
   let browser;
 
@@ -81,6 +83,7 @@ async function scrapeCoamo() {
 
 module.exports = scrapeCoamo;
 
+// Bloqueia recursos pesados da pagina para a coleta ficar mais leve.
 async function optimizePageRequests(page) {
   await page.setRequestInterception(true);
   page.on("request", (request) => {
@@ -94,11 +97,13 @@ async function optimizePageRequests(page) {
   });
 }
 
+// Detecta se o erro recebido foi de timeout durante a navegacao.
 function isTimeoutError(error) {
   const message = String(error?.message || "").toLowerCase();
   return message.includes("timeout");
 }
 
+// Tenta carregar a pagina com uma estrategia secundaria se a primeira expirar.
 async function gotoWithFallback(page, url) {
   try {
     await page.goto(url, { waitUntil: "networkidle2", timeout: TIMEOUT_PADRAO_MS });

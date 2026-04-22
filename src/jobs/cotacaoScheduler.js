@@ -4,7 +4,7 @@ const { criarLogger } = require("../logs/logger");
 
 const logger = criarLogger("SCHEDULER");
 
-//helper
+// Converte variaveis do .env para booleano no scheduler.
 function parseBoolean(value, defaultValue) {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
@@ -14,21 +14,21 @@ function parseBoolean(value, defaultValue) {
   return ["1", "true", "yes", "y", "on"].includes(normalized);
 }
 
-//pega o tempo agendado do env
+// Le as expressoes cron configuradas para os horarios de coleta automatica.
 function getCronExpressions() {
   const first = (process.env.SCHEDULER_CRON_1 || "0 12 * * *").trim();
   const second = (process.env.SCHEDULER_CRON_2 || "0 15 * * *").trim();
   return [first, second];
 }
 
-//
+// Define o nome exibido no historico para cada horario agendado.
 function getSlotLabel(index, expression) {
   if (index === 0) return "12:00";
   if (index === 1) return "15:00";
   return expression;
 }
 
-//
+// Registra os jobs cron que atualizam as cotacoes automaticamente.
 function startCotacaoScheduler() {
   const enabled = parseBoolean(process.env.SCHEDULER_ENABLED, true);
   if (!enabled) {
