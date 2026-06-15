@@ -2,13 +2,14 @@ const AppError = require("../../errors/AppError");
 
 const SOURCE_LABELS = {
   coamo: "Coamo",
+  cvale: "C.Vale",
   lar: "LAR",
 };
 
 // Garante que a fonte recebida existe e devolve seu nome amigavel.
 function ensureSource(source) {
   if (!SOURCE_LABELS[source]) {
-    throw new AppError("Fonte invalida. Use: coamo, lar ou all.", 400);
+    throw new AppError("Fonte invalida. Use: coamo, cvale, lar ou all.", 400);
   }
 
   return SOURCE_LABELS[source];

@@ -3,7 +3,7 @@ info:
   title: AgroSmart API
   version: 3.0.0
   description: |
-    API para coleta e consulta de cotacoes de graos (Coamo e LAR),
+    API para coleta e consulta de cotacoes de graos (Coamo, C.Vale e LAR),
     com historico em banco e autenticacao por token.
 servers:
   - url: https://agrosmartapi.onrender.com
@@ -82,6 +82,28 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/cotacoes/cvale:
+    get:
+      tags: [Cotacoes]
+      summary: Retorna cotacoes da C.Vale
+      security:
+        - bearerAuth: []
+        - apiTokenHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ForceParam"
+      responses:
+        "200":
+          description: Lista de cotacoes da C.Vale
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cotacao"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/cotacoes/lar:
     get:
       tags: [Cotacoes]
@@ -107,7 +129,7 @@ paths:
   /api/cotacoes/todos:
     get:
       tags: [Cotacoes]
-      summary: Retorna cotacoes de Coamo e LAR
+      summary: Retorna cotacoes de Coamo, C.Vale e LAR
       security:
         - bearerAuth: []
         - apiTokenHeader: []
@@ -137,7 +159,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, coamo, lar]
+            enum: [all, coamo, cvale, lar]
             default: all
         - name: grao
           in: query
@@ -183,7 +205,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, coamo, lar]
+            enum: [all, coamo, cvale, lar]
             default: all
         - name: grao
           in: query
@@ -214,7 +236,7 @@ paths:
   /api/cotacoes/comparativo:
     get:
       tags: [Utils]
-      summary: Compara o melhor preco atual entre Coamo e LAR
+      summary: Compara o melhor preco atual entre Coamo, C.Vale e LAR
       security:
         - bearerAuth: []
         - apiTokenHeader: []
@@ -259,7 +281,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [coamo, lar]
+            enum: [coamo, cvale, lar]
         - name: grao
           in: query
           required: true
@@ -313,7 +335,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, coamo, lar]
+            enum: [all, coamo, cvale, lar]
             default: all
         - name: grao
           in: query
@@ -366,7 +388,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [all, coamo, lar]
+            enum: [all, coamo, cvale, lar]
             default: all
         - name: grao
           in: query
@@ -404,7 +426,7 @@ paths:
           description: Fonte desejada
           schema:
             type: string
-            enum: [all, coamo, lar]
+            enum: [all, coamo, cvale, lar]
             default: all
         - name: limit
           in: query
@@ -455,7 +477,7 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            error: Fonte invalida. Use coamo, lar ou all.
+            error: Fonte invalida. Use coamo, cvale, lar ou all.
     UnauthorizedError:
       description: Token ausente ou invalido
       content:
@@ -513,11 +535,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Cotacao"
+        cvale:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cotacao"
         larAgro:
           type: array
           items:
             $ref: "#/components/schemas/Cotacao"
-      required: [coamo, larAgro]
+      required: [coamo, cvale, larAgro]
     CotacaoComFonte:
       allOf:
         - $ref: "#/components/schemas/Cotacao"
@@ -525,7 +551,7 @@ components:
           properties:
             fonte:
               type: string
-              enum: [coamo, lar]
+              enum: [coamo, cvale, lar]
               example: coamo
           required: [fonte]
     CotacaoAnalitica:
@@ -542,7 +568,7 @@ components:
       properties:
         fonte:
           type: string
-          enum: [all, coamo, lar]
+          enum: [all, coamo, cvale, lar]
         total:
           type: integer
           example: 2
@@ -559,7 +585,7 @@ components:
       properties:
         fonte:
           type: string
-          enum: [all, coamo, lar]
+          enum: [all, coamo, cvale, lar]
         criterio:
           type: string
           example: maior_preco
@@ -594,6 +620,10 @@ components:
           type: object
           additionalProperties: true
         coamo:
+          allOf:
+            - $ref: "#/components/schemas/CotacaoAnalitica"
+          nullable: true
+        cvale:
           allOf:
             - $ref: "#/components/schemas/CotacaoAnalitica"
           nullable: true
@@ -638,7 +668,7 @@ components:
       properties:
         fonte:
           type: string
-          enum: [all, coamo, lar]
+          enum: [all, coamo, cvale, lar]
         filtros:
           type: object
           additionalProperties: true
@@ -683,7 +713,7 @@ components:
       properties:
         fonte:
           type: string
-          enum: [coamo, lar]
+          enum: [coamo, cvale, lar]
         filtros:
           type: object
           additionalProperties: true
@@ -718,7 +748,7 @@ components:
           example: 123
         source:
           type: string
-          enum: [coamo, lar]
+          enum: [coamo, cvale, lar]
           example: coamo
         payload:
           type: array

@@ -54,7 +54,7 @@ async function getBestPrice({ source = "all", force = false, filters = {} } = {}
   };
 }
 
-// Compara a melhor cotacao entre Coamo e LAR para o grao informado.
+// Compara a melhor cotacao entre Coamo, C.Vale e LAR para o grao informado.
 async function getComparisonBySource({ force = false, filters = {} } = {}) {
   const appliedFilters = cleanFilters(filters);
 
@@ -62,18 +62,32 @@ async function getComparisonBySource({ force = false, filters = {} } = {}) {
     throw new AppError("Informe o parametro grao para consultar o comparativo.", 400);
   }
 
-  const [coamoQuotes, larQuotes] = await Promise.all([
+  const [coamoQuotes, cvaleQuotes, larQuotes] = await Promise.all([
     getCurrentQuotes("coamo", force),
+    getCurrentQuotes("cvale", force),
     getCurrentQuotes("lar", force),
   ]);
   const bestCoamo = findHighestPriceQuote(filterQuotes(coamoQuotes, appliedFilters));
+  const bestCvale = findHighestPriceQuote(filterQuotes(cvaleQuotes, appliedFilters));
   const bestLar = findHighestPriceQuote(filterQuotes(larQuotes, appliedFilters));
 
-  if (!bestCoamo && !bestLar) {
+  if (!bestCoamo && !bestCvale && !bestLar) {
     throw new AppError("Nenhuma cotacao encontrada para o comparativo informado.", 404);
   }
 
-  return buildComparison(bestCoamo, bestLar, appliedFilters);
+  const comparison = buildComparison(bestCoamo, bestLar, appliedFilters);
+
+  // Adiciona C.Vale ao comparativo se houver cotacao disponivel.
+  if (bestCvale) {
+    comparison.cvale = {
+      ...bestCvale,
+      precoNumerico: bestCvale.precoNumerico,
+    };
+  } else {
+    comparison.cvale = null;
+  }
+
+  return comparison;
 }
 
 // Gera o CSV usado pela rota /exportar a partir das cotacoes filtradas.
