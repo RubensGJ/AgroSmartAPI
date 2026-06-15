@@ -4,6 +4,7 @@ const {
   getBestPrice,
   getCoamo,
   getComparisonBySource,
+  getCvale,
   getFilteredQuotes,
   getAll,
   getHistory,
@@ -48,6 +49,15 @@ router.get(
   "/coamo",
   asyncHandler(async (req, res) => {
     const dados = await getCoamo(parseForce(req.query.force));
+    res.json(dados);
+  })
+);
+
+// Retorna as cotacoes atuais da C.Vale.
+router.get(
+  "/cvale",
+  asyncHandler(async (req, res) => {
+    const dados = await getCvale(parseForce(req.query.force));
     res.json(dados);
   })
 );

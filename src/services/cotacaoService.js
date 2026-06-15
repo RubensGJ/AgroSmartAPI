@@ -2,6 +2,7 @@ const {
   bootstrapCotacoesCache,
   getAll,
   getCoamo,
+  getCvale,
   getLar,
   refreshScheduled,
 } = require("./cotacoes/currentCotacaoService");
@@ -21,6 +22,7 @@ module.exports = {
   getBestPrice,
   getCoamo,
   getComparisonBySource,
+  getCvale,
   getFilteredQuotes,
   getHistory,
   getHistoryByPeriod,
