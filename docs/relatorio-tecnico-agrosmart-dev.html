@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatorio tecnico da AgroSmart API - branch dev</title>
+  <style>
+    :root {
+      --bg: #f6f8f7;
+      --surface: #ffffff;
+      --text: #17211b;
+      --muted: #56645b;
+      --border: #dbe4de;
+      --primary: #17663a;
+      --primary-soft: #e8f5ed;
+      --warn: #8a4b08;
+      --warn-soft: #fff5df;
+      --danger: #9d2525;
+      --danger-soft: #fff0f0;
+      --code: #edf2ef;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1120px; margin: 0 auto; padding: 40px 22px 72px; }
+    header, section { margin-bottom: 34px; }
+    header {
+      padding: 34px;
+      color: #fff;
+      background: linear-gradient(135deg, #104f2c, #24804c);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(16, 79, 44, 0.18);
+    }
+    h1, h2, h3 { line-height: 1.18; margin: 0 0 12px; }
+    h1 { font-size: clamp(2rem, 4vw, 3.3rem); max-width: 850px; }
+    h2 { font-size: 1.65rem; padding-bottom: 9px; border-bottom: 2px solid var(--border); }
+    h3 { font-size: 1.15rem; margin-top: 24px; }
+    p, li { line-height: 1.65; }
+    a { color: var(--primary); }
+    header a { color: #d9ffe8; }
+    code {
+      padding: 0.12rem 0.35rem;
+      border-radius: 5px;
+      background: var(--code);
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.92em;
+    }
+    header code { color: #103d25; background: #e7f7ed; }
+    pre {
+      overflow-x: auto;
+      margin: 18px 0;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--code);
+      line-height: 1.55;
+    }
+    .meta { margin: 16px 0 0; color: #e2f7e9; }
+    .card {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: 0 5px 18px rgba(23, 33, 27, 0.04);
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .summary-list { margin: 0; padding-left: 20px; }
+    .summary-list li + li { margin-top: 10px; }
+    .toc { columns: 2; padding-left: 20px; }
+    .toc li { break-inside: avoid; margin-bottom: 5px; }
+    .callout {
+      margin: 16px 0;
+      padding: 15px 17px;
+      border-left: 5px solid var(--primary);
+      border-radius: 9px;
+      background: var(--primary-soft);
+    }
+    .callout.warn { border-left-color: var(--warn); background: var(--warn-soft); }
+    .callout.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+    .table-wrap { overflow-x: auto; margin: 17px 0 24px; border: 1px solid var(--border); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 0.94rem; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: #eef5f0; color: #24472f; font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .ok { background: var(--primary-soft); color: var(--primary); }
+    .medium { background: var(--warn-soft); color: var(--warn); }
+    .high, .critical { background: var(--danger-soft); color: var(--danger); }
+    details { margin: 12px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
+    summary { cursor: pointer; color: #204c31; font-weight: 700; }
+    .small { color: var(--muted); font-size: 0.9rem; }
+    .nowrap { white-space: nowrap; }
+    footer { margin-top: 44px; color: var(--muted); font-size: 0.9rem; }
+    @media (max-width: 760px) {
+      main { padding: 20px 12px 48px; }
+      header { padding: 24px 20px; }
+      .grid { grid-template-columns: 1fr; }
+      .toc { columns: 1; }
+      th, td { padding: 10px; }
+    }
+    @media print {
+      body { background: #fff; }
+      main { max-width: none; padding: 0; }
+      header { box-shadow: none; }
+      .card, details { break-inside: avoid; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <main data-report-audience="technical">
+    <header data-contract-section="title">
+      <h1>Relatorio tecnico da AgroSmart API</h1>
+      <p>Leitura integral da branch <code>dev</code>, com arquitetura, funcoes, endpoints, integracoes, banco, deploy e riscos.</p>
+      <p class="meta">
+        Base: commit <code>8909debb9b90989b3407da08c33846064e7d63ac</code> em 18/06/2026.
+        Repositorio: <a href="https://github.com/RubensGJ/AgroSmartAPI/tree/dev">GitHub / dev</a>.
+      </p>
+    </header>
+
+    <section data-contract-section="technical-summary">
+      <h2>Resumo tecnico</h2>
+      <div class="card">
+        <ul class="summary-list">
+          <li><strong>Objetivo:</strong> coletar cotacoes de graos por scraping, guardar snapshots no PostgreSQL e oferecer consultas atuais, historicas, filtradas, comparativas e CSV por uma API REST.</li>
+          <li><strong>Stack:</strong> Node.js CommonJS, Express, Puppeteer, PostgreSQL/Neon, node-cron, Swagger UI e OpenAPI 3.0.3.</li>
+          <li><strong>Fontes ativas:</strong> Coamo, C.Vale e LAR. O arquivo Granos existe, mas nao participa da aplicacao.</li>
+          <li><strong>Arquitetura:</strong> rotas finas chamam services; services coordenam cache, scraping e regras; repositories executam SQL; utils normalizam, filtram e geram relatorios.</li>
+          <li><strong>Producao:</strong> a URL publicada aponta para Render e respondeu em <code>/health</code> e <code>/docs</code>. O OpenAPI publicado coincide com o arquivo local, mas isso nao prova que todo o codigo implantado veio do mesmo commit.</li>
+          <li><strong>Estado geral:</strong> a separacao de responsabilidades e boa para o tamanho atual, mas faltam testes, migracoes, CI, controle de frescor, observabilidade e garantias para scheduler em multiplas instancias.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>O fluxo principal funciona, mas ha riscos de consistencia e operacao</h2>
+      <p>A API preserva o ultimo dado valido quando o scraping falha, reduz chamadas repetidas com cache e evita duas coletas simultaneas da mesma fonte dentro do processo. Em contrapartida, pode devolver dados antigos sem informar a idade, depende de paginas sujeitas a bloqueios e executa o scheduler dentro do servidor web.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Pontos fortes</h3>
+          <ul>
+            <li>Queries SQL parametrizadas.</li>
+            <li>Comparacao de token com <code>timingSafeEqual</code>.</li>
+            <li>Retry, cache e deduplicacao de coleta por fonte.</li>
+            <li>Historico e ultimo snapshot separados.</li>
+            <li>Erros HTTP padronizados com <code>AppError</code>.</li>
+            <li>OpenAPI amplo e Swagger publicado.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Principais alertas</h3>
+          <ul>
+            <li>Comparativo inclui C.Vale na resposta, mas nao no calculo da melhor fonte.</li>
+            <li>Scheduler pode duplicar coletas em varias replicas.</li>
+            <li>Scraping falho pode esperar minutos por retries inadequados.</li>
+            <li><code>saveSnapshot</code> nao usa transacao.</li>
+            <li>README, package e codigo estao fora de sincronia.</li>
+            <li><code>npm audit</code> encontrou 11 dependencias vulneraveis.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Fluxo de uma consulta atual</h3>
+      <pre>Cliente
+  -> Express + requestLogger
+  -> authenticateToken em /api/cotacoes/*
+  -> rota
+  -> service
+     -> cache em memoria, se disponivel
+     -> senao, cotacoes_ultima no PostgreSQL
+     -> senao, Puppeteer no site da fonte
+        -> valida array nao vazio
+        -> INSERT em cotacoes_historico
+        -> UPSERT em cotacoes_ultima
+        -> atualiza cache
+  -> resposta JSON ou CSV
+  -> log resumido da requisicao em logs_requisicoes</pre>
+    </section>
+
+    <section>
+      <h2>Navegacao do relatorio</h2>
+      <ol class="toc">
+        <li><a href="#escopo">Escopo e metodo</a></li>
+        <li><a href="#arquitetura">Arquitetura e inicializacao</a></li>
+        <li><a href="#pastas">Pastas e arquivos</a></li>
+        <li><a href="#funcoes">Inventario de funcoes</a></li>
+        <li><a href="#endpoints">Endpoints</a></li>
+        <li><a href="#scraping">Scrapers e terceiros</a></li>
+        <li><a href="#banco">Banco de dados</a></li>
+        <li><a href="#dependencias">Bibliotecas e frameworks</a></li>
+        <li><a href="#configuracao">Variaveis de ambiente</a></li>
+        <li><a href="#deploy">Execucao e deploy</a></li>
+        <li><a href="#seguranca">Seguranca e vulnerabilidades</a></li>
+        <li><a href="#riscos">Riscos e divida tecnica</a></li>
+        <li><a href="#proximos-passos">Proximos passos</a></li>
+        <li><a href="#questoes">Questoes abertas</a></li>
+      </ol>
+    </section>
+
+    <section id="escopo" data-contract-section="scope-data-and-metric-definitions">
+      <h2>Escopo e base verificada</h2>
+      <p>O relatorio descreve o codigo versionado na branch <code>dev</code>. Foram lidos todos os arquivos de aplicacao, script, configuracao, README e OpenAPI. Nao foram consultados dados privados do banco, tokens ou variaveis reais de producao.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fonte de evidencia</th><th>Resultado</th><th>Limite</th></tr></thead>
+          <tbody>
+            <tr><td>Git local</td><td><code>dev</code> limpa e alinhada a <code>origin/dev</code> no commit <code>8909deb</code>.</td><td>Representa o workspace no momento da leitura.</td></tr>
+            <tr><td><a href="https://api.github.com/repos/RubensGJ/AgroSmartAPI/branches/dev">GitHub API</a></td><td>A branch remota apontava para o mesmo SHA e nao estava protegida.</td><td>Estado consultado em 18/06/2026.</td></tr>
+            <tr><td><a href="https://agrosmartapi.onrender.com/health">Producao /health</a></td><td>HTTP 200 com <code>status: ok</code>.</td><td>Health indica processo ativo, nao valida banco, scrapers ou endpoints protegidos.</td></tr>
+            <tr><td><a href="https://agrosmartapi.onrender.com/docs">Producao /docs</a></td><td>HTTP 200; cabecalhos indicaram origem Render e proxy Cloudflare.</td><td>Configuracao do servico Render nao esta no repositorio.</td></tr>
+            <tr><td><a href="https://agrosmartapi.onrender.com/openapi.yaml">OpenAPI de producao</a></td><td>Conteudo normalizado igual ao <code>openapi.yaml</code> local.</td><td>Igualdade da especificacao nao garante igualdade de todo o build.</td></tr>
+            <tr><td><code>npm audit --omit=dev</code></td><td>11 pacotes afetados: 1 critico, 4 altos e 6 moderados.</td><td>Resultado temporal; deve ser reexecutado antes de atualizar dependencias.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="arquitetura">
+      <h2>Arquitetura e inicializacao</h2>
+      <p>O sistema usa uma arquitetura em camadas simples. Nao ha framework de injecao, ORM ou container: modulos CommonJS importam dependencias diretamente.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Camada</th><th>Responsabilidade</th><th>Dependencias principais</th></tr></thead>
+          <tbody>
+            <tr><td>Entrada HTTP</td><td>Express, JSON, CORS, health, docs e montagem das rotas.</td><td><code>src/app.js</code></td></tr>
+            <tr><td>Middlewares</td><td>Autenticacao, log de requisicao, 404 e tratamento de erros.</td><td><code>src/middlewares/</code></td></tr>
+            <tr><td>Rotas</td><td>Le query strings, chama services e define formato HTTP.</td><td><code>src/routes/</code></td></tr>
+            <tr><td>Services</td><td>Orquestra cache, coleta, retry, filtros, comparacao, historico e exportacao.</td><td><code>src/services/</code></td></tr>
+            <tr><td>Scrapers</td><td>Automatiza paginas dos fornecedores e extrai tabelas.</td><td><code>src/scrapers/</code>, Puppeteer</td></tr>
+            <tr><td>Persistencia</td><td>Cria estrutura e executa consultas PostgreSQL.</td><td><code>src/database/</code>, <code>pg</code></td></tr>
+            <tr><td>Utilitarios</td><td>Datas, normalizacao, preco numerico, filtros, CSV e series historicas.</td><td><code>src/utils/</code></td></tr>
+            <tr><td>Agendamento</td><td>Dispara coletas em dois horarios por cron.</td><td><code>src/jobs/</code>, node-cron</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Sequencia de subida</h3>
+      <ol>
+        <li><code>dotenv</code> carrega o ambiente e o OpenAPI e carregado em memoria.</li>
+        <li>Middlewares e rotas sao registrados.</li>
+        <li><code>validateAuthConfig()</code> bloqueia a subida se autenticacao estiver ativa sem token.</li>
+        <li><code>initDatabase()</code> cria tabelas e indices com <code>CREATE IF NOT EXISTS</code>.</li>
+        <li><code>bootstrapCotacoesCache()</code> carrega o ultimo snapshot das tres fontes.</li>
+        <li>Express escuta em <code>PORT</code>.</li>
+        <li>O scheduler registra os cron jobs no mesmo processo.</li>
+      </ol>
+      <div class="callout warn"><strong>Consequencia:</strong> banco e autenticacao sao obrigatorios para o processo subir. Falha no banco encerra o processo com codigo 1.</div>
+    </section>
+
+    <section id="pastas">
+      <h2>Para que serve cada pasta e arquivo raiz</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Caminho</th><th>Papel</th><th>Observacao</th></tr></thead>
+          <tbody>
+            <tr><td><code>src/</code></td><td>Todo o codigo executado pela API.</td><td>Organizado por responsabilidade.</td></tr>
+            <tr><td><code>src/database/</code></td><td>Pool PostgreSQL, DDL e repositories de cotacoes/logs.</td><td>SQL direto, sem ORM e sem migracoes versionadas.</td></tr>
+            <tr><td><code>src/errors/</code></td><td>Erro de dominio com status HTTP e detalhes.</td><td>Contem apenas <code>AppError</code>.</td></tr>
+            <tr><td><code>src/jobs/</code></td><td>Agendamentos automaticos de coleta.</td><td>Executados dentro da API.</td></tr>
+            <tr><td><code>src/logs/</code></td><td>Logger textual padronizado para console.</td><td>Nao usa biblioteca estruturada.</td></tr>
+            <tr><td><code>src/middlewares/</code></td><td>Funcoes transversais do Express.</td><td>Auth, log HTTP e erros.</td></tr>
+            <tr><td><code>src/routes/</code></td><td>Contrato HTTP das cotacoes.</td><td>Uma rota central com 11 endpoints protegidos.</td></tr>
+            <tr><td><code>src/scrapers/</code></td><td>Automacoes Puppeteer por provedor.</td><td>Coamo, C.Vale e LAR ativos; Granos inativo.</td></tr>
+            <tr><td><code>src/services/</code></td><td>Regras e orquestracao da aplicacao.</td><td>Facade em <code>cotacaoService.js</code>.</td></tr>
+            <tr><td><code>src/utils/</code></td><td>Funcoes puras ou quase puras reutilizaveis.</td><td>Boa divisao entre normalizacao, filtro e reporting.</td></tr>
+            <tr><td><code>scripts/</code></td><td>Automacao de instalacao do Chrome do Puppeteer.</td><td>Roda no <code>postinstall</code>.</td></tr>
+            <tr><td><code>openapi.yaml</code></td><td>Especificacao OpenAPI 3.0.3 e fonte da Swagger UI.</td><td>Versao declarada 3.0.0.</td></tr>
+            <tr><td><code>package.json</code></td><td>Metadados, scripts, runtime e dependencias npm.</td><td>Versao declarada 2.3.0; descricao desatualizada.</td></tr>
+            <tr><td><code>package-lock.json</code></td><td>Trava a arvore de dependencias.</td><td>Lockfile v3.</td></tr>
+            <tr><td><code>.env.example</code></td><td>Contrato de configuracao da aplicacao.</td><td>Nao contem segredo real.</td></tr>
+            <tr><td><code>.gitignore</code></td><td>Exclui ambiente, dependencias, logs, cache e dados locais.</td><td><code>.env.example</code> e explicitamente permitido.</td></tr>
+            <tr><td><code>readme.md</code></td><td>Guia de instalacao e operacao.</td><td>Esta defasado em fontes, endpoints e cron.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="funcoes">
+      <h2>Inventario completo de funcoes por modulo</h2>
+      <p>As listas abaixo explicam a intencao de cada funcao nomeada. Handlers anonimos das rotas estao detalhados na secao de endpoints.</p>
+
+      <details open>
+        <summary><code>src/app.js</code></summary>
+        <ul>
+          <li><code>bootstrap()</code>: valida autenticacao, cria estrutura do banco e aquece o cache.</li>
+          <li><code>startServer()</code>: executa o bootstrap, abre a porta HTTP e inicia o scheduler.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/database/db.js</code></summary>
+        <ul>
+          <li><code>parseBoolean()</code>: converte texto de ambiente em booleano.</li>
+          <li><code>shouldUseSsl()</code>: usa <code>DATABASE_SSL</code> ou detecta <code>neon.tech</code>.</li>
+          <li><code>getPool()</code>: cria e reutiliza um unico <code>pg.Pool</code>.</li>
+          <li><code>query()</code>: facade para consultas parametrizadas.</li>
+          <li><code>initDatabase()</code>: cria tres tabelas e dois indices.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/database/cotacoesRepository.js</code> e <code>requestLogsRepository.js</code></summary>
+        <ul>
+          <li><code>parsePayload()</code>: tolera JSONB como array, objeto com <code>payload</code> ou string JSON.</li>
+          <li><code>mapSnapshotRow()</code>: converte nomes SQL em objeto de dominio.</li>
+          <li><code>saveSnapshot()</code>: insere historico e faz upsert do ultimo snapshot.</li>
+          <li><code>getLatestSnapshot()</code>: le a ultima coleta de uma fonte.</li>
+          <li><code>listSnapshots()</code>: lista historico recente, limitado a 500 snapshots.</li>
+          <li><code>listSnapshotsByPeriod()</code>: monta WHERE dinamico parametrizado, limitado a 2.000 snapshots.</li>
+          <li><code>saveRequestLog()</code>: persiste metodo, rota, status e duracao.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/middlewares/</code></summary>
+        <ul>
+          <li><code>authToken.parseBoolean()</code>: interpreta a flag de auth.</li>
+          <li><code>isAuthEnabled()</code>: informa se o token e obrigatorio.</li>
+          <li><code>getConfiguredToken()</code>: le o token oficial.</li>
+          <li><code>extractToken()</code>: aceita Bearer ou <code>x-api-token</code>.</li>
+          <li><code>safeTokenCompare()</code>: compara buffers em tempo constante quando os tamanhos coincidem.</li>
+          <li><code>validateAuthConfig()</code>: valida o token durante a subida.</li>
+          <li><code>authenticateToken()</code>: autoriza ou responde por meio de <code>AppError</code>.</li>
+          <li><code>getRoute()</code>: remove query string do caminho logado.</li>
+          <li><code>shouldIgnoreRequest()</code>: ignora health, favicon e docs.</li>
+          <li><code>requestLogger()</code>: mede duracao e salva log apos o fim da resposta.</li>
+          <li><code>notFoundHandler()</code>: converte rota desconhecida em 404.</li>
+          <li><code>errorHandler()</code>: padroniza JSON de erro e nivel do log.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/logs/logger.js</code> e <code>src/errors/AppError.js</code></summary>
+        <ul>
+          <li><code>getTimestamp()</code>: gera ISO UTC para o log.</li>
+          <li><code>getMensagemErro()</code>: prefere stack, depois mensagem.</li>
+          <li><code>escrever()</code>: envia a linha para console.log/warn/error.</li>
+          <li><code>criarLogger()</code>: cria logger contextual com <code>info</code>, <code>aviso</code>, <code>sucesso</code> e <code>erro</code>.</li>
+          <li><code>AppError</code>: classe que carrega mensagem, status HTTP e detalhes opcionais.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/jobs/cotacaoScheduler.js</code></summary>
+        <ul>
+          <li><code>parseBoolean()</code>: interpreta a flag do scheduler.</li>
+          <li><code>getCronExpressions()</code>: devolve dois crons, padrao 11h e 14h.</li>
+          <li><code>getSlotLabel()</code>: rotula o primeiro job como 11:00 e o segundo como 14:00.</li>
+          <li><code>startCotacaoScheduler()</code>: valida crons, registra jobs e chama <code>refreshScheduled()</code>.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/routes/cotacoesRoutes.js</code></summary>
+        <ul>
+          <li><code>asyncHandler()</code>: encaminha rejeicoes async ao middleware de erro.</li>
+          <li><code>parseForce()</code>: considera verdadeiro somente o texto exato <code>true</code>.</li>
+          <li><code>parseLimit()</code>: converte limite inteiro ou usa fallback.</li>
+          <li><code>buildFiltersFromQuery()</code>: agrupa <code>grao</code>, <code>local</code>, <code>descricao</code>, <code>fornecedor</code> e <code>unidade</code>.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/services/cotacoes/currentCotacaoService.js</code></summary>
+        <ul>
+          <li><code>parseBoolean()</code>: interpreta configuracoes de coleta.</li>
+          <li><code>shouldCollectInParallel()</code>: decide entre coleta sequencial e paralela.</li>
+          <li><code>getRetryMaxAttempts()</code> e <code>getRetryDelayMs()</code>: leem politica de retry.</li>
+          <li><code>sleep()</code>: aguarda entre tentativas.</li>
+          <li><code>normalizeError()</code>: converte erro de scraper em 502 com origem e causa.</li>
+          <li><code>isRetryableError()</code>: evita retry apenas para erros conhecidos de Chrome ausente.</li>
+          <li><code>validateScrapedData()</code>: exige array nao vazio.</li>
+          <li><code>persistSnapshot()</code>: salva no banco e atualiza cache.</li>
+          <li><code>loadLatestToCache()</code>: aquece uma fonte a partir do banco.</li>
+          <li><code>collectSourceWithRetry()</code>: deduplica coleta em andamento, repete e persiste.</li>
+          <li><code>getSourceData()</code>: escolhe force, cache, banco ou scraping.</li>
+          <li><code>getCoamo()</code>, <code>getCvale()</code> e <code>getLar()</code>: atalhos por fonte.</li>
+          <li><code>getAll()</code>: retorna as tres fontes, sequenciais ou paralelas.</li>
+          <li><code>getCurrentQuotes()</code>: combina fontes e inclui <code>fonte</code>/<code>precoNumerico</code>.</li>
+          <li><code>refreshScheduled()</code>: coleta as tres fontes e devolve resumo de sucesso por fonte.</li>
+          <li><code>bootstrapCotacoesCache()</code>: carrega os tres ultimos snapshots em paralelo.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/services/cotacoes/analysisCotacaoService.js</code></summary>
+        <ul>
+          <li><code>getFilteredQuotes()</code>: busca atuais, aplica filtros e sanitiza.</li>
+          <li><code>getBestPrice()</code>: exige grao e devolve o maior preco numerico.</li>
+          <li><code>getComparisonBySource()</code>: busca melhor item das tres fontes.</li>
+          <li><code>exportQuotes()</code>: filtra e converte para CSV.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/services/cotacoes/historyCotacaoService.js</code> e <code>cotacaoCommon.js</code></summary>
+        <ul>
+          <li><code>parseDateFilter()</code>: aceita data curta ou ISO e converte para ISO.</li>
+          <li><code>parsePeriod()</code>: monta intervalo e valida ordem.</li>
+          <li><code>getHistory()</code>: lista snapshots brutos.</li>
+          <li><code>getVariation()</code>: exige fonte/grao e calcula primeiro, ultimo e variacao.</li>
+          <li><code>getHistoryByPeriod()</code>: exige ao menos uma data e expande snapshots em itens.</li>
+          <li><code>ensureSource()</code>: valida <code>coamo</code>, <code>cvale</code> ou <code>lar</code>.</li>
+          <li><code>normalizeRequestedSource()</code>: normaliza fonte e aceita <code>all</code>.</li>
+          <li><code>cleanFilters()</code>: remove filtros vazios.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/utils/</code></summary>
+        <ul>
+          <li><code>getOffsetForTimeZone()</code>, <code>getDateTimeParts()</code> e <code>getNowInBrasiliaISO()</code>: montam timestamp com timezone configuravel.</li>
+          <li><code>normalizeText()</code>: remove acentos, caixa e espacos.</li>
+          <li><code>parsePrice()</code>: interpreta formatos brasileiro e internacional de preco.</li>
+          <li><code>enrichQuotes()</code>: adiciona fonte e preco numerico.</li>
+          <li><code>matchesFilter()</code> e <code>filterQuotes()</code>: fazem busca textual parcial.</li>
+          <li><code>sanitizeQuote()</code> e <code>sanitizeQuotes()</code>: removem campo interno de calculo.</li>
+          <li><code>findHighestPriceQuote()</code>: reduz itens comparaveis ao maior preco.</li>
+          <li><code>buildComparison()</code>: compara somente Coamo e LAR.</li>
+          <li><code>buildVariationFromSnapshots()</code>: escolhe o melhor preco por snapshot e cria serie.</li>
+          <li><code>buildPeriodItems()</code>: expande cada snapshot em itens com metadados.</li>
+          <li><code>escapeCsvValue()</code> e <code>quotesToCsv()</code>: geram CSV com aspas escapadas.</li>
+          <li><code>cotacaoAnalytics.js</code>: facade de compatibilidade para imports antigos; nao possui consumidor atual.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><code>src/scrapers/</code> e <code>scripts/installChrome.js</code></summary>
+        <ul>
+          <li>Os tres scrapers ativos possuem <code>parseBoolean()</code>, <code>optimizePageRequests()</code>, <code>isTimeoutError()</code> e <code>gotoWithFallback()</code>.</li>
+          <li><code>scrapeCoamo()</code>: extrai tabela da Coamo.</li>
+          <li><code>scrapeCvale()</code>, <code>selecionarLocal()</code> e <code>detectarPrecoIndisponivel()</code>: selecionam Dourados e validam janela de dados.</li>
+          <li><code>scrapeLarAgro()</code>, <code>detectarPaginaBloqueada()</code> e <code>selectCotacaoAndSubmit()</code>: selecionam Campo Grande, preenchem data e detectam bloqueio Akamai.</li>
+          <li><code>scrapeGranos()</code>: scraper ESM isolado; nao e importado.</li>
+          <li><code>log()</code>, <code>getPuppeteerCliPath()</code>, <code>removeBrokenBrowserFolder()</code>, <code>installChrome()</code> e <code>main()</code>: garantem Chrome no postinstall.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section id="endpoints">
+      <h2>Endpoints e ideia de cada operacao</h2>
+      <p>As rotas tecnicas sao publicas. Todo caminho em <code>/api/cotacoes/*</code> passa pelo token quando <code>AUTH_ENABLED=true</code>.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Metodo e caminho</th><th>Auth</th><th>Parametros principais</th><th>Resposta/ideia</th></tr></thead>
+          <tbody>
+            <tr><td><code>GET /</code></td><td>Publica</td><td>Nenhum</td><td>Status basico e links para health/docs.</td></tr>
+            <tr><td><code>GET /health</code></td><td>Publica</td><td>Nenhum</td><td><code>status</code>, servico e timestamp. Nao testa dependencias.</td></tr>
+            <tr><td><code>GET /docs</code></td><td>Publica</td><td>Nenhum</td><td>Swagger UI gerada do OpenAPI carregado na subida.</td></tr>
+            <tr><td><code>GET /openapi.yaml</code></td><td>Publica</td><td>Nenhum</td><td>Entrega o contrato YAML bruto.</td></tr>
+            <tr><td><code>GET /api/cotacoes/coamo</code></td><td>Token</td><td><code>force</code></td><td>Array atual da Coamo.</td></tr>
+            <tr><td><code>GET /api/cotacoes/cvale</code></td><td>Token</td><td><code>force</code></td><td>Array atual da C.Vale/Dourados.</td></tr>
+            <tr><td><code>GET /api/cotacoes/lar</code></td><td>Token</td><td><code>force</code></td><td>Array atual da LAR.</td></tr>
+            <tr><td><code>GET /api/cotacoes/todos</code></td><td>Token</td><td><code>force</code></td><td>Objeto com <code>coamo</code>, <code>cvale</code> e <code>larAgro</code>.</td></tr>
+            <tr><td><code>GET /api/cotacoes/filtro</code></td><td>Token</td><td><code>fonte</code>, <code>force</code>, grao, local, descricao, fornecedor, unidade</td><td>Total, filtros aplicados e itens atuais. Busca parcial sem acento/caixa.</td></tr>
+            <tr><td><code>GET /api/cotacoes/melhor-preco</code></td><td>Token</td><td><code>grao</code> obrigatorio, fonte, force e filtros</td><td>Maior <code>precoNumerico</code> entre itens considerados.</td></tr>
+            <tr><td><code>GET /api/cotacoes/comparativo</code></td><td>Token</td><td><code>grao</code> obrigatorio, force e filtros</td><td>Melhor item por fonte e bloco <code>diferenca</code>. O bloco considera apenas Coamo/LAR.</td></tr>
+            <tr><td><code>GET /api/cotacoes/variacao</code></td><td>Token</td><td><code>fonte</code> especifica e <code>grao</code> obrigatorios; datas, filtros, limit</td><td>Serie do melhor preco em cada snapshot; variacao do primeiro ao ultimo.</td></tr>
+            <tr><td><code>GET /api/cotacoes/periodo</code></td><td>Token</td><td>Ao menos <code>dataInicio</code> ou <code>dataFim</code>; fonte, filtros, limit</td><td>Expande snapshots historicos em itens individuais.</td></tr>
+            <tr><td><code>GET /api/cotacoes/exportar</code></td><td>Token</td><td>Fonte, force e filtros</td><td>Download <code>cotacoes.csv</code> em UTF-8.</td></tr>
+            <tr><td><code>GET /api/cotacoes/historico</code></td><td>Token</td><td><code>fonte</code>, <code>limit</code></td><td>Snapshots brutos, incluindo payload completo e metadados.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout"><strong><code>force=true</code>:</strong> ignora cache e banco, executa scraping e persiste um novo snapshot. Qualquer outro texto e tratado como falso.</div>
+      <div class="callout warn"><strong>Contrato incompleto:</strong> <code>/docs</code> e <code>/openapi.yaml</code> existem no Express, mas nao aparecem como paths na especificacao OpenAPI.</div>
+    </section>
+
+    <section id="scraping">
+      <h2>Scrapers e servicos terceiros</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Terceiro</th><th>Uso</th><th>Como coleta</th><th>Risco observado</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://www.coamo.com.br/preco-do-dia/">Coamo</a></td><td>Fonte ativa; local fixo Campo Mourao.</td><td>Abre pagina, espera <code>table tbody</code> e mapeia cinco colunas.</td><td>Probe HTTP simples retornou 404 em 18/06/2026; validar seletor/URL com Puppeteer.</td></tr>
+            <tr><td><a href="https://www.cvale.com.br/site/preco-do-dia">C.Vale</a></td><td>Fonte ativa; tenta selecionar Dourados.</td><td>Seleciona primeiro <code>select</code>, espera conteudo e extrai tabela.</td><td>Probe retornou 403; pagina informa janelas 09:00-12:00 e 13:30-15:00.</td></tr>
+            <tr><td><a href="https://www.lar.ind.br/lar-agro/agricola/#cotacao">LAR</a></td><td>Fonte ativa; unidade Campo Grande/MS.</td><td>Seleciona <code>#cotacao</code>, preenche data, envia formulario e extrai tabela.</td><td>Probe retornou 403; codigo ja detecta bloqueio Akamai.</td></tr>
+            <tr><td><a href="https://granoscorretora.com.br/cotacao-do-dia/">Granos</a></td><td>Nao ativo; tentativa de coletar Campo Grande.</td><td>Modulo ESM separado, seleciona soja/milho/trigo/sorgo.</td><td>Probe retornou 406; arquivo nao e importado e nao segue o padrao de erros/logs.</td></tr>
+            <tr><td><a href="https://neon.tech/">Neon/PostgreSQL</a></td><td>Persistencia indicada por README e mensagens do codigo.</td><td><code>pg.Pool</code> usando <code>DATABASE_URL</code>.</td><td>SSL usa <code>rejectUnauthorized: false</code>.</td></tr>
+            <tr><td><a href="https://render.com/">Render</a></td><td>Hospedagem da API publicada.</td><td>Processo Node acessivel em <code>agrosmartapi.onrender.com</code>.</td><td>Nao ha <code>render.yaml</code>; configuracao vive fora do Git.</td></tr>
+            <tr><td>Cloudflare</td><td>Proxy na frente da URL de producao.</td><td>Inferido pelos cabecalhos HTTP observados.</td><td>Configuracao nao esta no repositorio.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small">Os probes foram requisicoes HTTP simples, nao execucoes completas do Puppeteer. Codigos 403/406 podem ser especificamente uma defesa contra clientes automatizados; o 404 da Coamo merece verificacao funcional prioritaria.</p>
+    </section>
+
+    <section id="banco">
+      <h2>Banco de dados e modelo de persistencia</h2>
+      <p>O sistema usa PostgreSQL diretamente. A API cria o schema na inicializacao, sem ferramenta de migracao. Dados de cotacao ficam em JSONB, preservando o formato retornado pelos scrapers.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tabela</th><th>Finalidade</th><th>Campos principais</th><th>Indice</th></tr></thead>
+          <tbody>
+            <tr><td><code>cotacoes_historico</code></td><td>Um registro por coleta bem-sucedida.</td><td>id, fonte, dados_json, quantidade_itens, coletado_em, janela_horario, tipo_disparo, criado_em</td><td><code>(fonte, coletado_em DESC)</code></td></tr>
+            <tr><td><code>cotacoes_ultima</code></td><td>Um registro por fonte para leitura rapida.</td><td>fonte PK, dados_json, quantidade_itens, coletado_em, janela_horario, tipo_disparo, atualizado_em</td><td>Chave primaria em fonte</td></tr>
+            <tr><td><code>logs_requisicoes</code></td><td>Resumo de chamadas HTTP concluidas.</td><td>id, metodo, rota, status_code, duracao_ms, criado_em</td><td><code>(criado_em DESC)</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Comportamento de cache</h3>
+      <ul>
+        <li>Cache e um objeto em memoria por processo: <code>coamo</code>, <code>cvale</code> e <code>lar</code>.</li>
+        <li>Na subida, o cache recebe <code>cotacoes_ultima</code>.</li>
+        <li>Sem cache e sem banco, a primeira consulta dispara scraping.</li>
+        <li>Nao existe TTL, idade maxima ou indicador de dado obsoleto.</li>
+      </ul>
+      <div class="callout danger"><strong>Consistencia:</strong> historico e ultima cotacao sao gravados em duas queries sem transacao. Se a segunda falhar, o historico fica atualizado e <code>cotacoes_ultima</code> nao.</div>
+    </section>
+
+    <section id="dependencias">
+      <h2>Bibliotecas, frameworks e runtime</h2>
+      <p>O projeto exige Node.js 18 ou superior. A maquina analisada estava em Node 24.14.0 e npm 11.9.0.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pacote instalado</th><th>Tipo</th><th>Uso no projeto</th></tr></thead>
+          <tbody>
+            <tr><td><code>express@4.21.2</code></td><td>Framework web</td><td>Servidor HTTP, rotas, middlewares e JSON.</td></tr>
+            <tr><td><code>cors@2.8.5</code></td><td>Middleware</td><td>Habilita CORS sem restricao de origem.</td></tr>
+            <tr><td><code>dotenv@16.4.7</code></td><td>Configuracao</td><td>Carrega <code>.env</code>.</td></tr>
+            <tr><td><code>pg@8.19.0</code></td><td>Driver PostgreSQL</td><td>Pool e queries SQL.</td></tr>
+            <tr><td><code>puppeteer@24.4.0</code></td><td>Automacao de browser</td><td>Scraping e instalacao do Chrome.</td></tr>
+            <tr><td><code>node-cron@4.2.1</code></td><td>Scheduler</td><td>Dois disparos diarios com timezone.</td></tr>
+            <tr><td><code>swagger-ui-express@5.0.1</code></td><td>Documentacao</td><td>Publica Swagger UI em <code>/docs</code>.</td></tr>
+            <tr><td><code>yamljs@0.3.0</code></td><td>Parser YAML</td><td>Le <code>openapi.yaml</code> durante a subida.</td></tr>
+            <tr><td>Modulos nativos</td><td>Node.js</td><td><code>crypto</code>, <code>path</code>, <code>fs</code>, <code>child_process</code> e <code>Intl</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small">As versoes acima sao as resolvidas no <code>node_modules</code>/<code>package-lock</code>; algumas faixas declaradas no <code>package.json</code> sao mais amplas.</p>
+    </section>
+
+    <section id="configuracao">
+      <h2>Variaveis de ambiente</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variavel</th><th>Padrao</th><th>Funcao</th><th>Obrigatoria</th></tr></thead>
+          <tbody>
+            <tr><td><code>PORT</code></td><td>3000</td><td>Porta HTTP.</td><td>Nao</td></tr>
+            <tr><td><code>APP_TIMEZONE</code></td><td>America/Sao_Paulo</td><td>Timestamp <code>coletado_em</code>.</td><td>Nao</td></tr>
+            <tr><td><code>AUTH_ENABLED</code></td><td>true</td><td>Ativa token nas rotas de cotacao.</td><td>Nao</td></tr>
+            <tr><td><code>API_TOKEN</code></td><td>Vazio</td><td>Token compartilhado.</td><td>Sim, se auth ativa</td></tr>
+            <tr><td><code>DATABASE_URL</code></td><td>Vazio</td><td>Conexao PostgreSQL.</td><td>Sim</td></tr>
+            <tr><td><code>DATABASE_SSL</code></td><td>Detectado por host</td><td>Ativa/desativa SSL.</td><td>Nao</td></tr>
+            <tr><td><code>PUPPETEER_HEADLESS</code></td><td>true</td><td>Browser sem interface grafica.</td><td>Nao</td></tr>
+            <tr><td><code>SCHEDULER_ENABLED</code></td><td>true</td><td>Ativa cron.</td><td>Nao</td></tr>
+            <tr><td><code>SCHEDULER_TIMEZONE</code></td><td>America/Sao_Paulo</td><td>Timezone dos cron jobs.</td><td>Nao</td></tr>
+            <tr><td><code>SCHEDULER_CRON_1</code></td><td><code>0 11 * * *</code></td><td>Primeiro disparo diario.</td><td>Nao</td></tr>
+            <tr><td><code>SCHEDULER_CRON_2</code></td><td><code>0 14 * * *</code></td><td>Segundo disparo diario.</td><td>Nao</td></tr>
+            <tr><td><code>SCRAPER_PARALLEL_COLLECTION</code></td><td>false</td><td>Coleta fontes ao mesmo tempo.</td><td>Nao</td></tr>
+            <tr><td><code>SCRAPER_NAV_TIMEOUT_MS</code></td><td>90000</td><td>Timeout de navegacao.</td><td>Nao</td></tr>
+            <tr><td><code>SCRAPER_SELECTOR_TIMEOUT_MS</code></td><td>45000</td><td>Timeout de seletor/conteudo.</td><td>Nao</td></tr>
+            <tr><td><code>SCRAPER_RETRY_MAX_ATTEMPTS</code></td><td>3</td><td>Numero de tentativas.</td><td>Nao</td></tr>
+            <tr><td><code>SCRAPER_RETRY_DELAY_MS</code></td><td>180000</td><td>Espera de 3 minutos entre tentativas.</td><td>Nao</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="deploy">
+      <h2>Execucao, instalacao e deploy</h2>
+      <h3>Local</h3>
+      <ul>
+        <li><code>npm install</code>: instala dependencias e executa o postinstall do Chrome.</li>
+        <li><code>npm run dev</code>: usa <code>node --watch src/app.js</code>.</li>
+        <li><code>npm start</code>: usa <code>node src/app.js</code>.</li>
+        <li><code>npm test</code>: termina com erro proposital, pois nao ha testes configurados.</li>
+      </ul>
+      <h3>Producao observada</h3>
+      <ul>
+        <li>Host publicado: <a href="https://agrosmartapi.onrender.com">https://agrosmartapi.onrender.com</a>.</li>
+        <li>Cabecalho <code>x-render-origin-server: Render</code> confirma Render como origem.</li>
+        <li>Cloudflare aparece como servidor de borda.</li>
+        <li>Nao existe Dockerfile, <code>render.yaml</code>, workflow de CI/CD ou script de deploy.</li>
+        <li>Build command, start command, plano, health check e variaveis sao gerenciados fora do repositorio.</li>
+      </ul>
+      <div class="callout warn"><strong>Scheduler embutido:</strong> em scale-to-zero os jobs nao rodam durante sleep; em duas ou mais replicas, cada replica registra os mesmos jobs e pode gravar snapshots duplicados. A deduplicacao <code>inFlight</code> funciona apenas dentro de um processo.</div>
+    </section>
+
+    <section id="seguranca">
+      <h2>Seguranca e auditoria de dependencias</h2>
+      <h3>Controles existentes</h3>
+      <ul>
+        <li>Token obrigatorio por padrao nas rotas de negocio.</li>
+        <li>Suporte a Bearer e <code>x-api-token</code>.</li>
+        <li>Comparacao temporalmente segura para tokens do mesmo tamanho.</li>
+        <li>SQL parametrizado nos repositories.</li>
+        <li><code>.env</code> ignorado pelo Git.</li>
+      </ul>
+      <h3>Lacunas</h3>
+      <ul>
+        <li>Token unico e estatico, sem identidade, escopo, expiracao ou rotacao implementada.</li>
+        <li>CORS aberto para qualquer origem.</li>
+        <li>Sem rate limit; <code>force=true</code> pode iniciar browser e gerar carga cara.</li>
+        <li>Sem Helmet/cabecalhos endurecidos.</li>
+        <li>Detalhes de falha de scraper podem expor causa interna na resposta 502.</li>
+        <li>SSL do PostgreSQL nao valida certificado quando ativado.</li>
+      </ul>
+      <h3>Resultado do npm audit em 18/06/2026</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Severidade</th><th>Quantidade</th><th>Pacotes/cadeias relevantes</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge critical">Critica</span></td><td>1</td><td><code>basic-ftp</code>, transitivo de Puppeteer.</td></tr>
+            <tr><td><span class="badge high">Alta</span></td><td>4</td><td><code>express</code>, <code>path-to-regexp</code>, <code>tar-fs</code>, <code>ws</code>.</td></tr>
+            <tr><td><span class="badge medium">Moderada</span></td><td>6</td><td><code>body-parser</code>, <code>brace-expansion</code>, <code>ip-address</code>, <code>js-yaml</code>, <code>qs</code>, <code>socks</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Nao e correto concluir que todas sao exploraveis neste uso. Mesmo assim, ha atualizacoes disponiveis e a dependencia direta Express aparece afetada. Qualquer atualizacao deve ser feita em mudanca separada, com teste dos endpoints e scrapers.</p>
+    </section>
+
+    <section id="riscos" data-contract-section="limitations-uncertainty-and-robustness-checks">
+      <h2>Riscos, inconsistencias e limites da analise</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Prioridade</th><th>Achado</th><th>Impacto</th><th>Evidencia</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge high">Alta</span></td><td>Comparativo nao considera C.Vale na diferenca.</td><td>Pode declarar Coamo/LAR como melhor mesmo com C.Vale superior.</td><td><code>getComparisonBySource()</code> chama <code>buildComparison(bestCoamo, bestLar)</code> e apenas anexa C.Vale.</td></tr>
+            <tr><td><span class="badge high">Alta</span></td><td>Scheduler por processo.</td><td>Coletas perdidas em sleep ou duplicadas em escala horizontal.</td><td>node-cron e iniciado em <code>app.js</code>.</td></tr>
+            <tr><td><span class="badge high">Alta</span></td><td>Dependencias vulneraveis.</td><td>Risco de DoS, traversal e outros, conforme caminho usado.</td><td><code>npm audit --omit=dev</code>.</td></tr>
+            <tr><td><span class="badge high">Alta</span></td><td>Nenhuma suite de testes.</td><td>Refatoracoes de scraping, preco, datas e SQL ficam sem rede de seguranca.</td><td><code>npm test</code> sempre falha.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Retry amplo demais.</td><td>C.Vale fora de horario e bloqueio LAR podem repetir com esperas longas; sequencialmente, tres fontes podem consumir muitos minutos.</td><td><code>isRetryableError()</code> exclui apenas Chrome ausente.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Sem indicador de frescor.</td><td>Cliente nao sabe se a cotacao atual e recente ou antiga.</td><td>Endpoints atuais retornam arrays sem <code>collectedAt</code>.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Gravacao sem transacao.</td><td>Historico e ultima cotacao podem divergir.</td><td>Duas queries independentes em <code>saveSnapshot()</code>.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Rotulo do scheduler e fixo.</td><td>Se cron for alterado, <code>slotLabel</code> continua 11:00/14:00.</td><td><code>getSlotLabel()</code> usa o indice, nao a expressao configurada.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Fallback de local na C.Vale.</td><td>Se Dourados sumir, opcao 0 pode ser usada e os dados ainda recebem local Dourados.</td><td><code>fallbackIndex=0</code> e local hardcoded.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Retencao ilimitada.</td><td>Historico e logs crescem sem politica de limpeza.</td><td>Nao existe job/SQL de retencao.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Documentacao divergente.</td><td>Operacao e consumidores podem usar horarios/endpoints errados.</td><td>README cita duas fontes e 12h/15h; codigo usa tres e 11h/14h.</td></tr>
+            <tr><td><span class="badge medium">Media</span></td><td>Versoes divergentes.</td><td>Dificulta saber a versao real.</td><td>package 2.3.0, OpenAPI 3.0.0.</td></tr>
+            <tr><td><span class="badge ok">Baixa</span></td><td>Codigo morto/legado.</td><td>Confunde manutencao e nao segue padroes atuais.</td><td><code>granosScraper.js</code> e facade <code>cotacaoAnalytics.js</code> sem consumidor.</td></tr>
+            <tr><td><span class="badge ok">Baixa</span></td><td>Chave <code>larAgro</code> inconsistente.</td><td>Contrato fica menos uniforme que <code>coamo/cvale/lar</code>.</td><td><code>getAll()</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Limites</h3>
+      <ul>
+        <li>Nao foi usado token de producao nem executado endpoint protegido.</li>
+        <li>Nao foram acessados dados do Neon ou configuracao interna do Render.</li>
+        <li>Os scrapers nao foram executados ponta a ponta para evitar coleta externa e gravacao indireta; foram lidos integralmente e os sites receberam apenas probes HTTP simples.</li>
+        <li>O health atual nao verifica banco, Chrome, scheduler ou paginas de origem.</li>
+      </ul>
+    </section>
+
+    <section id="proximos-passos" data-contract-section="recommended-next-steps">
+      <h2>Proximos passos recomendados</h2>
+      <ol>
+        <li><strong>Corrigir o comparativo:</strong> calcular vencedor e diferencas considerando as tres fontes.</li>
+        <li><strong>Criar testes focados:</strong> primeiro para <code>parsePrice</code>, filtros, comparativo, variacao, datas e services com repositories/scrapers simulados.</li>
+        <li><strong>Atualizar dependencias com controle:</strong> tratar Express e cadeia do Puppeteer, reexecutar audit e validar scrapers.</li>
+        <li><strong>Separar scheduler:</strong> usar worker/cron externo ou lock distribuido no PostgreSQL.</li>
+        <li><strong>Adicionar frescor:</strong> devolver <code>collectedAt</code>, idade e fonte do dado; definir TTL/politica de staleness.</li>
+        <li><strong>Tornar persistencia atomica:</strong> envolver historico + ultima em transacao.</li>
+        <li><strong>Revisar retry:</strong> nao repetir fora de horario, bloqueios e erros de contrato; usar backoff e limite total.</li>
+        <li><strong>Sincronizar documentacao:</strong> README, versoes, horarios, C.Vale e todos os endpoints.</li>
+        <li><strong>Decidir Granos:</strong> integrar ao mesmo padrao ou remover o arquivo morto em mudanca separada.</li>
+        <li><strong>Versionar operacao:</strong> adicionar configuracao Render/Docker e CI quando a equipe definir o processo oficial.</li>
+      </ol>
+    </section>
+
+    <section id="questoes" data-contract-section="further-questions">
+      <h2>Questoes abertas para a equipe</h2>
+      <ol>
+        <li>A fonte Granos deve entrar oficialmente na API ou foi apenas experimento?</li>
+        <li>Os horarios oficiais sao 11h/14h ou 12h/15h no fuso de Sao Paulo?</li>
+        <li>O servico Render usa uma unica instancia e pode dormir?</li>
+        <li>Qual e a idade maxima aceitavel para uma cotacao ser chamada de atual?</li>
+        <li>O comparativo deve comparar precos entre locais diferentes ou exigir o mesmo local/unidade?</li>
+        <li>Logs e historico precisam de politica de retencao?</li>
+        <li>A branch <code>dev</code> deve ser protegida no GitHub?</li>
+      </ol>
+    </section>
+
+    <section data-contract-section="methodology">
+      <h2>Metodo de leitura e validacao</h2>
+      <p>A analise seguiu o caminho de execucao: bootstrap, middleware, rotas, services, repositories, utils, scrapers e scheduler. O contrato OpenAPI foi parseado como estrutura YAML; dependencias instaladas foram confirmadas com npm; o deploy foi verificado por HTTP; imports e funcoes foram cruzados por busca estatica.</p>
+      <pre>Escopo = arquivos versionados da dev
+Validacoes = Git + leitura integral + parse YAML + npm ls/audit + probes HTTP
+Sem alteracao = codigo, dependencias, banco, deploy e configuracao</pre>
+    </section>
+
+    <footer>
+      Relatorio gerado para servir como contexto tecnico do projeto. Atualize a base/commit deste documento sempre que arquitetura, fontes, schema ou deploy mudarem de forma relevante.
+    </footer>
+  </main>
+</body>
+</html>
