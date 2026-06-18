@@ -1,4 +1,5 @@
 const scrapeCoamo = require("../../scrapers/coamoScraper");
+const scrapeCvale = require("../../scrapers/cvaleScraper");
 const scrapeLarAgro = require("../../scrapers/larScraper");
 const AppError = require("../../errors/AppError");
 const { getLatestSnapshot, saveSnapshot } = require("../../database/cotacoesRepository");
@@ -15,16 +16,19 @@ const logger = criarLogger("COTACAO");
 
 const SOURCES = {
   coamo: { label: SOURCE_LABELS.coamo, scraper: scrapeCoamo },
+  cvale: { label: SOURCE_LABELS.cvale, scraper: scrapeCvale },
   lar: { label: SOURCE_LABELS.lar, scraper: scrapeLarAgro },
 };
 
 const cache = {
   coamo: null,
+  cvale: null,
   lar: null,
 };
 
 const inFlight = {
   coamo: null,
+  cvale: null,
   lar: null,
 };
 
@@ -224,44 +228,53 @@ async function getCoamo(force = false) {
   return getSourceData("coamo", force);
 }
 
+// Atalho para retornar apenas a cotacao atual da C.Vale.
+async function getCvale(force = false) {
+  return getSourceData("cvale", force);
+}
+
 // Atalho para retornar apenas a cotacao atual da LAR.
 async function getLar(force = false) {
   return getSourceData("lar", force);
 }
 
-// Retorna as cotacoes atuais das duas fontes em uma unica chamada.
+// Retorna as cotacoes atuais das tres fontes em uma unica chamada.
 async function getAll(force = false) {
   const runInParallel = shouldCollectInParallel();
 
   if (force) {
     if (runInParallel) {
-      const [coamoData, larData] = await Promise.all([
+      const [coamoData, cvaleData, larData] = await Promise.all([
         collectSourceWithRetry("coamo", { triggerType: "manual" }),
+        collectSourceWithRetry("cvale", { triggerType: "manual" }),
         collectSourceWithRetry("lar", { triggerType: "manual" }),
       ]);
 
-      return { coamo: coamoData, larAgro: larData };
+      return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
     }
 
     const coamoData = await collectSourceWithRetry("coamo", { triggerType: "manual" });
+    const cvaleData = await collectSourceWithRetry("cvale", { triggerType: "manual" });
     const larData = await collectSourceWithRetry("lar", { triggerType: "manual" });
 
-    return { coamo: coamoData, larAgro: larData };
+    return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
   }
 
   if (runInParallel) {
-    const [coamoData, larData] = await Promise.all([
+    const [coamoData, cvaleData, larData] = await Promise.all([
       getSourceData("coamo", false),
+      getSourceData("cvale", false),
       getSourceData("lar", false),
     ]);
 
-    return { coamo: coamoData, larAgro: larData };
+    return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
   }
 
   const coamoData = await getSourceData("coamo", false);
+  const cvaleData = await getSourceData("cvale", false);
   const larData = await getSourceData("lar", false);
 
-  return { coamo: coamoData, larAgro: larData };
+  return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
 }
 
 // Entrega cotacoes atuais ja enriquecidas com metadados para filtros e calculos.
@@ -272,6 +285,7 @@ async function getCurrentQuotes(source = "all", force = false) {
     const currentQuotes = await getAll(force);
     return [
       ...enrichQuotes("coamo", currentQuotes.coamo),
+      ...enrichQuotes("cvale", currentQuotes.cvale),
       ...enrichQuotes("lar", currentQuotes.larAgro),
     ];
   }
@@ -284,11 +298,13 @@ async function getCurrentQuotes(source = "all", force = false) {
 async function refreshScheduled(slotLabel) {
   logger.info(`Iniciando coleta agendada do horario ${slotLabel}.`);
   let coamoResult;
+  let cvaleResult;
   let larResult;
 
   if (shouldCollectInParallel()) {
-    [coamoResult, larResult] = await Promise.allSettled([
+    [coamoResult, cvaleResult, larResult] = await Promise.allSettled([
       collectSourceWithRetry("coamo", { triggerType: "scheduled", slotLabel }),
+      collectSourceWithRetry("cvale", { triggerType: "scheduled", slotLabel }),
       collectSourceWithRetry("lar", { triggerType: "scheduled", slotLabel }),
     ]);
   } else {
@@ -300,6 +316,16 @@ async function refreshScheduled(slotLabel) {
       coamoResult = { status: "fulfilled", value: coamoData };
     } catch (error) {
       coamoResult = { status: "rejected", reason: error };
+    }
+
+    try {
+      const cvaleData = await collectSourceWithRetry("cvale", {
+        triggerType: "scheduled",
+        slotLabel,
+      });
+      cvaleResult = { status: "fulfilled", value: cvaleData };
+    } catch (error) {
+      cvaleResult = { status: "rejected", reason: error };
     }
 
     try {
@@ -319,6 +345,10 @@ async function refreshScheduled(slotLabel) {
       coamoResult.status === "fulfilled"
         ? { ok: true, count: coamoResult.value.length }
         : { ok: false, error: coamoResult.reason.message },
+    cvale:
+      cvaleResult.status === "fulfilled"
+        ? { ok: true, count: cvaleResult.value.length }
+        : { ok: false, error: cvaleResult.reason.message },
     lar:
       larResult.status === "fulfilled"
         ? { ok: true, count: larResult.value.length }
@@ -328,7 +358,7 @@ async function refreshScheduled(slotLabel) {
 
 // Faz a carga inicial do cache em memoria com os ultimos snapshots do banco.
 async function bootstrapCotacoesCache() {
-  await Promise.all([loadLatestToCache("coamo"), loadLatestToCache("lar")]);
+  await Promise.all([loadLatestToCache("coamo"), loadLatestToCache("cvale"), loadLatestToCache("lar")]);
   logger.sucesso("Carga inicial de cache concluida.");
 }
 
@@ -336,6 +366,7 @@ module.exports = {
   bootstrapCotacoesCache,
   getAll,
   getCoamo,
+  getCvale,
   getCurrentQuotes,
   getLar,
   normalizeRequestedSource,
