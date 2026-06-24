@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: AgroSmart API
-  version: 3.0.0
+  version: 2.3.1
   description: |
     API para coleta e consulta de cotacoes de graos (Coamo, C.Vale e LAR),
     com historico em banco e autenticacao por token.
