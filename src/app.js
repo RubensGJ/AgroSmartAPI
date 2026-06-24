@@ -12,6 +12,7 @@ const { initDatabase } = require("./database/db");
 const { bootstrapCotacoesCache } = require("./services/cotacaoService");
 const { startCotacaoScheduler } = require("./jobs/cotacaoScheduler");
 const { criarLogger } = require("./logs/logger");
+const { assertChromeAvailable, formatChromeDiagnostics } = require("./utils/puppeteer");
 
 const app = express();
 const OPENAPI_FILE = path.resolve(__dirname, "..", "openapi.yaml");
@@ -61,6 +62,8 @@ app.use(errorHandler);
 async function bootstrap() {
   logger.info("Iniciando aplicacao.");
   validateAuthConfig();
+  const chromeDiagnostics = assertChromeAvailable();
+  logger.info(`Chrome do Puppeteer validado. ${formatChromeDiagnostics(chromeDiagnostics)}`);
   await initDatabase();
   await bootstrapCotacoesCache();
   logger.sucesso("Aplicacao pronta para receber requisicoes.");

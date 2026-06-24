@@ -7,6 +7,7 @@
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
     "postinstall": "node scripts/installChrome.js",
+    "check:chrome": "node scripts/checkChrome.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

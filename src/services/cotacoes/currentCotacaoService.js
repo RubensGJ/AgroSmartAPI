@@ -81,6 +81,7 @@ function normalizeError(source, error) {
 function isRetryableError(error) {
   const message = String(error?.message || "").toLowerCase();
   const knownNonRetryablePatterns = [
+    "chrome do puppeteer nao encontrado",
     "could not find chrome",
     "browser was not found",
     "chrome executable",
