@@ -19,7 +19,7 @@ A aplicacao usa Puppeteer para scraping, cache em memoria para respostas rapidas
 
 ## Stack
 
-- Node.js 18+
+- Node.js `>=18 <25`
 - Express
 - Puppeteer
 - node-cron
@@ -28,7 +28,7 @@ A aplicacao usa Puppeteer para scraping, cache em memoria para respostas rapidas
 
 ## Requisitos
 
-- Node.js `>=18`
+- Node.js `>=18 <25`
 - npm
 - Banco PostgreSQL/Neon acessivel por `DATABASE_URL`
 - Chrome do Puppeteer instalado ou disponivel no ambiente
@@ -58,6 +58,8 @@ Depois valide o Chrome usado pelo Puppeteer:
 ```bash
 npm run check:chrome
 ```
+
+O `npm install` executa o `postinstall` e baixa para `.cache/puppeteer` a revisao de Chrome esperada pela versao do Puppeteer. Em deploys como Render, mantenha a faixa de Node do `package.json` para evitar versoes atuais demais, como Node 26, antes das dependencias estarem validadas.
 
 ## Variaveis de ambiente
 

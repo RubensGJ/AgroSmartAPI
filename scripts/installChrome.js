@@ -1,7 +1,15 @@
 const fs = require("fs");
 const path = require("path");
-const { spawnSync } = require("child_process");
 const {
+  Browser,
+  detectBrowserPlatform,
+  install,
+  makeProgressCallback,
+  resolveBuildId,
+} = require("@puppeteer/browsers");
+const { PUPPETEER_REVISIONS } = require("puppeteer-core/internal/revisions.js");
+const {
+  PUPPETEER_CACHE_DIR,
   assertChromeAvailable,
   formatChromeDiagnostics,
   getChromeDiagnostics,
@@ -16,12 +24,6 @@ function logDiagnostics(prefix) {
   log(`${prefix}: ${formatChromeDiagnostics(getChromeDiagnostics())}`);
 }
 
-// Descobre o caminho do CLI interno do Puppeteer usado na instalacao do Chrome.
-function getPuppeteerCliPath() {
-  const packageJsonPath = require.resolve("puppeteer/package.json");
-  return path.join(path.dirname(packageJsonPath), "lib", "cjs", "puppeteer", "node", "cli.js");
-}
-
 // Remove o cache quebrado quando a pasta existe, mas o executavel nao.
 function removeBrokenBrowserFolder(executablePath) {
   const browserFolder = path.dirname(path.dirname(executablePath));
@@ -34,25 +36,30 @@ function removeBrokenBrowserFolder(executablePath) {
   fs.rmSync(browserFolder, { recursive: true, force: true });
 }
 
-// Executa o comando oficial do Puppeteer para instalar o Chrome.
-function installChrome() {
-  const cliPath = getPuppeteerCliPath();
-  const result = spawnSync(process.execPath, [cliPath, "browsers", "install", "chrome"], {
-    env: process.env,
-    stdio: "inherit",
+// Instala exatamente a revisao de Chrome esperada pela versao atual do Puppeteer.
+async function installChrome() {
+  const platform = detectBrowserPlatform();
+
+  if (!platform) {
+    throw new Error("Plataforma atual nao suportada pelo Puppeteer.");
+  }
+
+  const unresolvedBuildId = PUPPETEER_REVISIONS[Browser.CHROME];
+  const buildId = await resolveBuildId(Browser.CHROME, platform, unresolvedBuildId);
+  const result = await install({
+    browser: Browser.CHROME,
+    cacheDir: PUPPETEER_CACHE_DIR,
+    platform,
+    buildId,
+    buildIdAlias: buildId !== unresolvedBuildId ? unresolvedBuildId : undefined,
+    downloadProgressCallback: makeProgressCallback(Browser.CHROME, buildId),
   });
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (result.status !== 0) {
-    process.exit(result.status || 1);
-  }
+  log(`Chrome ${result.buildId} instalado em ${result.path}.`);
 }
 
 // Evita reinstalar o Chrome quando ele ja esta pronto e corrige cache quebrado.
-function main() {
+async function main() {
   const diagnostics = getChromeDiagnostics();
   logDiagnostics("Diagnostico inicial do Chrome");
 
@@ -68,9 +75,12 @@ function main() {
   }
 
   log("Instalando Chrome do Puppeteer.");
-  installChrome();
+  await installChrome();
   assertChromeAvailable();
   logDiagnostics("Diagnostico final do Chrome");
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

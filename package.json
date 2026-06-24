@@ -20,7 +20,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=18"
+    "node": ">=18 <25"
   },
   "dependencies": {
     "cors": "^2.8.5",
