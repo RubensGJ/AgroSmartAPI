@@ -10,6 +10,7 @@ const { requestLogger } = require("./middlewares/requestLogger");
 const { authenticateToken, validateAuthConfig } = require("./middlewares/authToken");
 const { initDatabase } = require("./database/db");
 const { bootstrapCotacoesCache } = require("./services/cotacaoService");
+const { getDeepHealth } = require("./services/healthService");
 const { startCotacaoScheduler } = require("./jobs/cotacaoScheduler");
 const { criarLogger } = require("./logs/logger");
 const { assertChromeAvailable, formatChromeDiagnostics } = require("./utils/puppeteer");
@@ -31,6 +32,16 @@ app.get("/health", (req, res) => {
     servico: "AgroSmart API",
     timestamp: new Date().toISOString(),
   });
+});
+
+// Diagnostico operacional completo, sem executar scraping ou expor segredos.
+app.get("/health/deep", async (req, res, next) => {
+  try {
+    const health = await getDeepHealth();
+    res.status(health.status === "fail" ? 503 : 200).json(health);
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Rota inicial para indicar rapidamente se a API esta online.

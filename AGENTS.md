@@ -20,6 +20,7 @@ This is a Node.js/Express API for grain quotation scraping and consultation. Mai
 Behavior decisions:
 
 - `GET /api/cotacoes/todos` must tolerate partial source failures. Return the versioned partial contract with `coamo`, `cvale`, and `larAgro` envelopes containing `ok`, `data`, `stale`, and `error`, instead of failing the whole response when only one source breaks.
+- `GET /health` must stay simple and fast for Render uptime checks. Use `GET /health/deep` for real operational health. Deep health checks Neon connectivity, latest snapshots for `coamo`, `cvale`, and `lar`, 24-hour freshness, C.Vale presence, Puppeteer Chrome availability, and scheduler state. It returns `ok`, `degraded`, or `fail` and must not run scraping or expose secrets.
 
 There is no dedicated test directory yet. When added, keep tests under `tests/` or `testes/`.
 
