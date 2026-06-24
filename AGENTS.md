@@ -49,7 +49,7 @@ O codigo principal fica em `src/`.
 - `npm test`: atualmente falha de proposito com `no test specified`; nao trate como suite valida.
 - `npm audit`: verifica vulnerabilidades de dependencias.
 
-Use Node.js `>=18`.
+Use Node.js `>=18 <25`.
 
 ## Estilo de codigo
 
