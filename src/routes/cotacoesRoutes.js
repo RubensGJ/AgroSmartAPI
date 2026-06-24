@@ -6,7 +6,7 @@ const {
   getComparisonBySource,
   getCvale,
   getFilteredQuotes,
-  getAll,
+  getAllPartial,
   getHistory,
   getHistoryByPeriod,
   getLar,
@@ -71,11 +71,11 @@ router.get(
   })
 );
 
-// Retorna as cotacoes atuais das duas fontes em uma unica resposta.
+// Retorna as cotacoes atuais das tres fontes em uma resposta parcial por fonte.
 router.get(
   "/todos",
   asyncHandler(async (req, res) => {
-    const dados = await getAll(parseForce(req.query.force));
+    const dados = await getAllPartial(parseForce(req.query.force));
     res.json(dados);
   })
 );

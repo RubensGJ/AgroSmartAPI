@@ -137,11 +137,11 @@ paths:
         - $ref: "#/components/parameters/ForceParam"
       responses:
         "200":
-          description: Cotacoes consolidadas
+          description: Cotacoes consolidadas com tolerancia a falha parcial por fonte
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CotacoesConsolidadas"
+                $ref: "#/components/schemas/CotacoesConsolidadasParciais"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "500":
@@ -544,6 +544,53 @@ components:
           items:
             $ref: "#/components/schemas/Cotacao"
       required: [coamo, cvale, larAgro]
+    CotacaoFonteParcial:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          description: Indica se ha dados disponiveis para a fonte.
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cotacao"
+        stale:
+          type: boolean
+          description: Indica que os dados retornados sao antigos porque a coleta atual falhou.
+          example: false
+        error:
+          nullable: true
+          type: object
+          properties:
+            message:
+              type: string
+              example: Falha ao coletar cotacoes da C.Vale
+            statusCode:
+              type: integer
+              example: 502
+            details:
+              nullable: true
+              type: object
+              additionalProperties: true
+      required: [ok, data, stale, error]
+    CotacoesConsolidadasParciais:
+      type: object
+      properties:
+        version:
+          type: integer
+          example: 2
+        partial:
+          type: boolean
+          description: Indica se ao menos uma fonte falhou ou usou dados antigos.
+          example: true
+        coamo:
+          $ref: "#/components/schemas/CotacaoFonteParcial"
+        cvale:
+          $ref: "#/components/schemas/CotacaoFonteParcial"
+        larAgro:
+          $ref: "#/components/schemas/CotacaoFonteParcial"
+      required: [version, partial, coamo, cvale, larAgro]
     CotacaoComFonte:
       allOf:
         - $ref: "#/components/schemas/Cotacao"

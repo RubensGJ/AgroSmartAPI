@@ -4,6 +4,8 @@
 
 This is a Node.js/Express API for grain quotation scraping and consultation. Main code is in `src/`.
 
+- Whenever I make relevant changes to behavior, flow, organization, or implementation, I must update this `AGENTS.md` to reflect the new rule or decision.
+
 - `src/app.js`: application bootstrap, routes, and health.
 - `src/routes/`: HTTP route definitions.
 - `src/services/`: current, historical, and analytical quotation logic.
@@ -14,6 +16,10 @@ This is a Node.js/Express API for grain quotation scraping and consultation. Mai
 - `scripts/`: operational scripts, currently Chrome installation for Puppeteer.
 - `docs/`: technical documentation and generated reports.
 - `openapi.yaml`: public API contract.
+
+Behavior decisions:
+
+- `GET /api/cotacoes/todos` must tolerate partial source failures. Return the versioned partial contract with `coamo`, `cvale`, and `larAgro` envelopes containing `ok`, `data`, `stale`, and `error`, instead of failing the whole response when only one source breaks.
 
 There is no dedicated test directory yet. When added, keep tests under `tests/` or `testes/`.
 

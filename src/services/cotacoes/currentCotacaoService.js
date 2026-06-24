@@ -224,6 +224,72 @@ async function getSourceData(source, force = false) {
   return collectSourceWithRetry(source, { triggerType: "manual" });
 }
 
+// Monta um erro simples e seguro para expor em respostas parciais.
+function serializeSourceError(error) {
+  return {
+    message: error.message,
+    statusCode: error.statusCode || 500,
+    details: error.details || null,
+  };
+}
+
+// Busca o ultimo dado conhecido de uma fonte para resposta parcial.
+async function getLatestAvailableData(source) {
+  if (cache[source]?.payload?.length) {
+    return cache[source].payload;
+  }
+
+  const latestSnapshot = await loadLatestToCache(source);
+  return latestSnapshot?.payload?.length ? latestSnapshot.payload : null;
+}
+
+// Executa uma fonte isolada e tenta devolver dado antigo se a coleta atual falhar.
+async function getPartialSourceData(source, force = false) {
+  try {
+    const data = force
+      ? await collectSourceWithRetry(source, { triggerType: "manual" })
+      : await getSourceData(source, false);
+
+    return {
+      ok: true,
+      data,
+      stale: false,
+      error: null,
+    };
+  } catch (error) {
+    const normalizedError = normalizeError(source, error);
+    logger.erro(`Falha na fonte ${source} durante consulta consolidada.`, normalizedError);
+
+    const fallbackData = await getLatestAvailableData(source);
+    if (fallbackData) {
+      logger.aviso(`Resposta consolidada usara dado antigo de ${source}.`);
+      return {
+        ok: true,
+        data: fallbackData,
+        stale: true,
+        error: serializeSourceError(normalizedError),
+      };
+    }
+
+    throw normalizedError;
+  }
+}
+
+// Converte resultado allSettled para o contrato parcial da rota /todos.
+function buildPartialSourceResponse(source, result) {
+  if (result.status === "fulfilled") {
+    return result.value;
+  }
+
+  const error = normalizeError(source, result.reason);
+  return {
+    ok: false,
+    data: [],
+    stale: false,
+    error: serializeSourceError(error),
+  };
+}
+
 // Atalho para retornar apenas a cotacao atual da Coamo.
 async function getCoamo(force = false) {
   return getSourceData("coamo", force);
@@ -276,6 +342,25 @@ async function getAll(force = false) {
   const larData = await getSourceData("lar", false);
 
   return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
+}
+
+// Retorna as tres fontes sem deixar uma falha derrubar a resposta inteira.
+async function getAllPartial(force = false) {
+  const [coamoResult, cvaleResult, larResult] = await Promise.allSettled([
+    getPartialSourceData("coamo", force),
+    getPartialSourceData("cvale", force),
+    getPartialSourceData("lar", force),
+  ]);
+
+  return {
+    version: 2,
+    partial: [coamoResult, cvaleResult, larResult].some(
+      (result) => result.status === "rejected" || result.value.stale || result.value.error
+    ),
+    coamo: buildPartialSourceResponse("coamo", coamoResult),
+    cvale: buildPartialSourceResponse("cvale", cvaleResult),
+    larAgro: buildPartialSourceResponse("lar", larResult),
+  };
 }
 
 // Entrega cotacoes atuais ja enriquecidas com metadados para filtros e calculos.
@@ -366,6 +451,7 @@ async function bootstrapCotacoesCache() {
 module.exports = {
   bootstrapCotacoesCache,
   getAll,
+  getAllPartial,
   getCoamo,
   getCvale,
   getCurrentQuotes,

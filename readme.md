@@ -2,6 +2,8 @@
 
 API Node.js para coleta e consulta de cotacoes de graos das cooperativas Coamo e LAR.
 
+DONT FORGET: npm install && npm run check:chrome  / Limpar Build Cache
+
 ## Funcionalidades
 
 - Coleta via scraping com Puppeteer.
