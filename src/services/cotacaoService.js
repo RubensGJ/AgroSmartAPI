@@ -1,6 +1,7 @@
 const {
   bootstrapCotacoesCache,
   getAll,
+  getAllPartial,
   getCoamo,
   getCvale,
   getLar,
@@ -19,6 +20,7 @@ module.exports = {
   bootstrapCotacoesCache,
   exportQuotes,
   getAll,
+  getAllPartial,
   getBestPrice,
   getCoamo,
   getComparisonBySource,

@@ -103,6 +103,24 @@ async function getLatestSnapshot(source) {
   return mapSnapshotRow(row);
 }
 
+// Busca os ultimos snapshots das fontes informadas em uma unica consulta.
+async function getLatestSnapshotsBySources(sources) {
+  if (!Array.isArray(sources) || sources.length === 0) {
+    return [];
+  }
+
+  const result = await query(
+    `
+      SELECT fonte, dados_json, quantidade_itens, coletado_em, janela_horario, tipo_disparo, atualizado_em
+      FROM cotacoes_ultima
+      WHERE fonte = ANY($1::text[])
+    `,
+    [sources]
+  );
+
+  return result.rows.map(mapSnapshotRow);
+}
+
 // Lista snapshots mais recentes, com ou sem filtro por fonte.
 async function listSnapshots({ source = null, limit = 50 }) {
   const parsedLimit = Number(limit);
@@ -173,6 +191,7 @@ async function listSnapshotsByPeriod({ source = null, startDate = null, endDate 
 
 module.exports = {
   getLatestSnapshot,
+  getLatestSnapshotsBySources,
   listSnapshots,
   listSnapshotsByPeriod,
   saveSnapshot,

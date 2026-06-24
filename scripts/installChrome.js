@@ -1,11 +1,19 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const puppeteer = require("puppeteer");
+const {
+  assertChromeAvailable,
+  formatChromeDiagnostics,
+  getChromeDiagnostics,
+} = require("../src/utils/puppeteer");
 
 // Escreve mensagens simples do postinstall no console.
 function log(message) {
   console.log(`[POSTINSTALL] ${message}`);
+}
+
+function logDiagnostics(prefix) {
+  log(`${prefix}: ${formatChromeDiagnostics(getChromeDiagnostics())}`);
 }
 
 // Descobre o caminho do CLI interno do Puppeteer usado na instalacao do Chrome.
@@ -30,6 +38,7 @@ function removeBrokenBrowserFolder(executablePath) {
 function installChrome() {
   const cliPath = getPuppeteerCliPath();
   const result = spawnSync(process.execPath, [cliPath, "browsers", "install", "chrome"], {
+    env: process.env,
     stdio: "inherit",
   });
 
@@ -44,16 +53,24 @@ function installChrome() {
 
 // Evita reinstalar o Chrome quando ele ja esta pronto e corrige cache quebrado.
 function main() {
-  const executablePath = puppeteer.executablePath();
+  const diagnostics = getChromeDiagnostics();
+  logDiagnostics("Diagnostico inicial do Chrome");
 
-  if (fs.existsSync(executablePath)) {
+  if (diagnostics.exists) {
     log("Chrome do Puppeteer ja esta disponivel.");
+    assertChromeAvailable();
+    logDiagnostics("Diagnostico final do Chrome");
     return;
   }
 
-  removeBrokenBrowserFolder(executablePath);
+  if (diagnostics.executablePath) {
+    removeBrokenBrowserFolder(diagnostics.executablePath);
+  }
+
   log("Instalando Chrome do Puppeteer.");
   installChrome();
+  assertChromeAvailable();
+  logDiagnostics("Diagnostico final do Chrome");
 }
 
 main();

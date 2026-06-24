@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: AgroSmart API
-  version: 3.0.0
+  version: 2.3.1
   description: |
     API para coleta e consulta de cotacoes de graos (Coamo, C.Vale e LAR),
     com historico em banco e autenticacao por token.
@@ -60,6 +60,24 @@ paths:
                   timestamp:
                     type: string
                     format: date-time
+  /health/deep:
+    get:
+      tags: [Health]
+      summary: Health check operacional completo
+      description: Verifica banco, snapshots por fonte, frescor dos dados, Chrome do Puppeteer e scheduler sem executar scraping.
+      responses:
+        "200":
+          description: API operacional ou degradada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeepHealthResponse"
+        "503":
+          description: API sem dependencia critica ou sem snapshots utilizaveis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeepHealthResponse"
   /api/cotacoes/coamo:
     get:
       tags: [Cotacoes]
@@ -137,11 +155,11 @@ paths:
         - $ref: "#/components/parameters/ForceParam"
       responses:
         "200":
-          description: Cotacoes consolidadas
+          description: Cotacoes consolidadas com tolerancia a falha parcial por fonte
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CotacoesConsolidadas"
+                $ref: "#/components/schemas/CotacoesConsolidadasParciais"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "500":
@@ -503,6 +521,169 @@ components:
           example:
             error: Falha ao coletar cotacoes da Coamo
   schemas:
+    DeepHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, fail]
+          example: degraded
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            database:
+              $ref: "#/components/schemas/DatabaseHealthCheck"
+            snapshots:
+              $ref: "#/components/schemas/SnapshotsHealthCheck"
+            chrome:
+              $ref: "#/components/schemas/ChromeHealthCheck"
+            scheduler:
+              $ref: "#/components/schemas/SchedulerHealthCheck"
+          required: [database, snapshots, chrome, scheduler]
+      required: [status, timestamp, checks]
+    DatabaseHealthCheck:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        latencyMs:
+          type: integer
+          example: 42
+        error:
+          type: string
+          nullable: true
+          example: null
+      required: [ok, latencyMs, error]
+    SnapshotsHealthCheck:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        usableCount:
+          type: integer
+          example: 2
+        freshCount:
+          type: integer
+          example: 1
+        expectedSources:
+          type: array
+          items:
+            type: string
+            enum: [coamo, cvale, lar]
+        sources:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/SnapshotSourceHealth"
+        error:
+          type: string
+          nullable: true
+          example: null
+      required: [ok, usableCount, freshCount, expectedSources, sources]
+    SnapshotSourceHealth:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        exists:
+          type: boolean
+          example: true
+        hasData:
+          type: boolean
+          example: true
+        fresh:
+          type: boolean
+          example: false
+        ageHours:
+          type: number
+          nullable: true
+          example: 187.5
+        thresholdHours:
+          type: integer
+          example: 24
+        itemCount:
+          type: integer
+          example: 8
+        collectedAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [ok, exists, hasData, fresh, ageHours, thresholdHours, itemCount, collectedAt, updatedAt]
+    ChromeHealthCheck:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        available:
+          type: boolean
+          example: true
+        platform:
+          type: string
+          example: linux
+        arch:
+          type: string
+          example: x64
+        nodeVersion:
+          type: string
+          example: v22.0.0
+        error:
+          type: string
+          nullable: true
+          example: null
+      required: [ok, available, platform, arch, nodeVersion, error]
+    SchedulerHealthCheck:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        enabled:
+          type: boolean
+          nullable: true
+          example: true
+        timezone:
+          type: string
+          nullable: true
+          example: America/Sao_Paulo
+        expressions:
+          type: array
+          items:
+            type: string
+          example: ["0 11 * * *", "0 14 * * *"]
+        jobsRegistered:
+          type: integer
+          example: 2
+        invalidExpressions:
+          type: array
+          items:
+            type: string
+        lastStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastFinishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastResult:
+          type: object
+          nullable: true
+          additionalProperties: true
+        lastError:
+          type: string
+          nullable: true
+          example: null
+      required: [ok, enabled, timezone, expressions, jobsRegistered, invalidExpressions, lastStartedAt, lastFinishedAt, lastResult, lastError]
     Cotacao:
       type: object
       properties:
@@ -544,6 +725,53 @@ components:
           items:
             $ref: "#/components/schemas/Cotacao"
       required: [coamo, cvale, larAgro]
+    CotacaoFonteParcial:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          description: Indica se ha dados disponiveis para a fonte.
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cotacao"
+        stale:
+          type: boolean
+          description: Indica que os dados retornados sao antigos porque a coleta atual falhou.
+          example: false
+        error:
+          nullable: true
+          type: object
+          properties:
+            message:
+              type: string
+              example: Falha ao coletar cotacoes da C.Vale
+            statusCode:
+              type: integer
+              example: 502
+            details:
+              nullable: true
+              type: object
+              additionalProperties: true
+      required: [ok, data, stale, error]
+    CotacoesConsolidadasParciais:
+      type: object
+      properties:
+        version:
+          type: integer
+          example: 2
+        partial:
+          type: boolean
+          description: Indica se ao menos uma fonte falhou ou usou dados antigos.
+          example: true
+        coamo:
+          $ref: "#/components/schemas/CotacaoFonteParcial"
+        cvale:
+          $ref: "#/components/schemas/CotacaoFonteParcial"
+        larAgro:
+          $ref: "#/components/schemas/CotacaoFonteParcial"
+      required: [version, partial, coamo, cvale, larAgro]
     CotacaoComFonte:
       allOf:
         - $ref: "#/components/schemas/Cotacao"

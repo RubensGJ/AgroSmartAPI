@@ -1,20 +1,10 @@
-const puppeteer = require("puppeteer");
 const AppError = require("../errors/AppError");
 const { criarLogger } = require("../logs/logger");
+const { getPuppeteerLaunchOptions, puppeteer } = require("../utils/puppeteer");
 
 const TIMEOUT_PADRAO_MS = Number.parseInt(process.env.SCRAPER_NAV_TIMEOUT_MS, 10) || 90000;
 const TIMEOUT_SELETOR_MS = Number.parseInt(process.env.SCRAPER_SELECTOR_TIMEOUT_MS, 10) || 45000;
 const logger = criarLogger("SCRAPER-CVALE");
-
-// Converte flags textuais do .env para booleano no Puppeteer.
-function parseBoolean(value, defaultValue = true) {
-  if (value === undefined || value === null || value === "") {
-    return defaultValue;
-  }
-
-  const normalized = String(value).toLowerCase().trim();
-  return ["1", "true", "yes", "y", "on"].includes(normalized);
-}
 
 // Abre o site da C.Vale, seleciona o local e devolve as cotacoes encontradas.
 async function scrapeCvale() {
@@ -24,10 +14,7 @@ async function scrapeCvale() {
     const url = "https://www.cvale.com.br/site/preco-do-dia";
     logger.info("Iniciando navegador Puppeteer.");
 
-    browser = await puppeteer.launch({
-      headless: parseBoolean(process.env.PUPPETEER_HEADLESS, true),
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-    });
+    browser = await puppeteer.launch(getPuppeteerLaunchOptions());
 
     const page = await browser.newPage();
     await optimizePageRequests(page);

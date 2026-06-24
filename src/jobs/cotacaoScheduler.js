@@ -3,6 +3,17 @@ const { refreshScheduled } = require("../services/cotacaoService");
 const { criarLogger } = require("../logs/logger");
 
 const logger = criarLogger("SCHEDULER");
+const schedulerState = {
+  enabled: null,
+  timezone: null,
+  expressions: [],
+  jobsRegistered: 0,
+  invalidExpressions: [],
+  lastStartedAt: null,
+  lastFinishedAt: null,
+  lastResult: null,
+  lastError: null,
+};
 
 // Converte variaveis do .env para booleano no scheduler.
 function parseBoolean(value, defaultValue) {
@@ -31,16 +42,25 @@ function getSlotLabel(index, expression) {
 // Registra os jobs cron que atualizam as cotacoes automaticamente.
 function startCotacaoScheduler() {
   const enabled = parseBoolean(process.env.SCHEDULER_ENABLED, true);
+  const timezone = process.env.SCHEDULER_TIMEZONE || "America/Sao_Paulo";
+  const expressions = getCronExpressions();
+
+  schedulerState.enabled = enabled;
+  schedulerState.timezone = timezone;
+  schedulerState.expressions = expressions;
+  schedulerState.jobsRegistered = 0;
+  schedulerState.invalidExpressions = [];
+
   if (!enabled) {
     logger.aviso("Scheduler desabilitado via SCHEDULER_ENABLED.");
     return [];
   }
 
-  const timezone = process.env.SCHEDULER_TIMEZONE || "America/Sao_Paulo";
   const jobs = [];
 
-  for (const [index, expression] of getCronExpressions().entries()) {
+  for (const [index, expression] of expressions.entries()) {
     if (!cron.validate(expression)) {
+      schedulerState.invalidExpressions.push(expression);
       logger.erro(`Expressao cron invalida ignorada: "${expression}".`);
       continue;
     }
@@ -50,10 +70,15 @@ function startCotacaoScheduler() {
       expression,
       async () => {
         const startedAt = new Date().toISOString();
+        schedulerState.lastStartedAt = startedAt;
+        schedulerState.lastFinishedAt = null;
+        schedulerState.lastError = null;
         logger.info(`Iniciando coleta agendada ${slotLabel}. Inicio: ${startedAt}.`);
 
         try {
           const result = await refreshScheduled(slotLabel);
+          schedulerState.lastResult = result;
+          schedulerState.lastFinishedAt = new Date().toISOString();
           logger.sucesso(
             `Coleta ${slotLabel} finalizada. Coamo: ${
               result.coamo.ok ? `ok (${result.coamo.count} itens)` : `falhou (${result.coamo.error})`
@@ -62,6 +87,8 @@ function startCotacaoScheduler() {
             }. LAR: ${result.lar.ok ? `ok (${result.lar.count} itens)` : `falhou (${result.lar.error})`}.`
           );
         } catch (error) {
+          schedulerState.lastError = error.message;
+          schedulerState.lastFinishedAt = new Date().toISOString();
           logger.erro(`Falha geral na coleta agendada ${slotLabel}.`, error);
         }
       },
@@ -69,10 +96,19 @@ function startCotacaoScheduler() {
     );
 
     jobs.push(job);
+    schedulerState.jobsRegistered = jobs.length;
     logger.info(`Job registrado. Cron: "${expression}". Timezone: "${timezone}".`);
   }
 
   return jobs;
 }
 
-module.exports = { startCotacaoScheduler };
+function getCotacaoSchedulerStatus() {
+  return {
+    ...schedulerState,
+    expressions: [...schedulerState.expressions],
+    invalidExpressions: [...schedulerState.invalidExpressions],
+  };
+}
+
+module.exports = { getCotacaoSchedulerStatus, startCotacaoScheduler };
