@@ -10,14 +10,14 @@
 
 ## Visao do projeto
 
-Esta e uma API Node.js/Express para scraping, persistencia e consulta de cotacoes de graos. As fontes atuais sao `coamo`, `cvale` e `lar`.
+Esta e uma API Node.js/Express para scraping, persistencia e consulta de cotacoes de graos. As fontes atuais sao `coamo`, `cvale`, `lar` e `granos`.
 
 O codigo principal fica em `src/`.
 
 - `src/app.js`: bootstrap da API, middlewares, Swagger, health checks e rotas.
 - `src/routes/`: definicoes HTTP.
 - `src/services/`: regras de cotacao atual, historico, analises e health profundo.
-- `src/scrapers/`: scrapers Puppeteer da Coamo, C.Vale, LAR e fontes experimentais.
+- `src/scrapers/`: scrapers Puppeteer da Coamo, C.Vale, LAR, Granos e fontes experimentais.
 - `src/database/`: conexao PostgreSQL/Neon, schema inicial e repositorios.
 - `src/utils/`: normalizacao, filtros, datas, CSV, relatorios e Puppeteer.
 - `src/middlewares/`, `src/errors/`, `src/logs/`, `src/jobs/`: request handling, erros, logging e scheduler.
@@ -28,15 +28,15 @@ O codigo principal fica em `src/`.
 
 ## Decisoes de comportamento
 
-- `GET /api/cotacoes/todos` deve tolerar falha parcial de fonte. Retorne o contrato parcial versionado com `version`, `partial`, `coamo`, `cvale` e `larAgro`; cada envelope deve conter `ok`, `data`, `stale` e `error`.
+- `GET /api/cotacoes/todos` deve tolerar falha parcial de fonte. Retorne o contrato parcial versionado com `version`, `partial`, `coamo`, `cvale`, `larAgro` e `granos`; cada envelope deve conter `ok`, `data`, `stale` e `error`.
 - `stale=true` significa que a resposta usa o ultimo dado valido conhecido porque a coleta atual falhou.
 - `GET /health` deve permanecer simples e rapido para uptime checks.
-- `GET /health/deep` e o health operacional completo. Ele verifica Neon/Postgres, snapshots recentes de `coamo`, `cvale` e `lar`, frescor de 24h, Chrome do Puppeteer e scheduler. Deve retornar `ok`, `degraded` ou `fail`, sem executar scraping e sem expor segredos.
+- `GET /health/deep` e o health operacional completo. Ele verifica Neon/Postgres, snapshots recentes de `coamo`, `cvale`, `lar` e `granos`, frescor de 24h, Chrome do Puppeteer e scheduler. Deve retornar `ok`, `degraded` ou `fail`, sem executar scraping e sem expor segredos.
 - Consultas sem `force=true` devem priorizar cache em memoria, depois `cotacoes_ultima`, e so entao scraping.
 - Consultas com `force=true` podem iniciar navegador, gerar trafego externo e escrever no banco. Trate isso como operacao sensivel.
 - Coletas bem-sucedidas salvam em `cotacoes_historico`, atualizam `cotacoes_ultima` e atualizam cache.
 - Coletas com erro, payload invalido ou payload vazio nao devem salvar novo snapshot.
-- Fontes validas em parametros: `all`, `coamo`, `cvale`, `lar`.
+- Fontes validas em parametros: `all`, `coamo`, `cvale`, `lar`, `granos`.
 - O comparativo inclui C.Vale quando houver dado, mas a diferenca principal ainda e calculada pelo helper historico de Coamo x LAR. Se isso mudar, atualize README e OpenAPI.
 - A C.Vale pode retornar indisponibilidade fora da janela aceita pelo site de origem.
 

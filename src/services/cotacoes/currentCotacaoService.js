@@ -1,6 +1,7 @@
 const scrapeCoamo = require("../../scrapers/coamoScraper");
 const scrapeCvale = require("../../scrapers/cvaleScraper");
 const scrapeLarAgro = require("../../scrapers/larScraper");
+const scrapeGranos = require("../../scrapers/granosScraper");
 const AppError = require("../../errors/AppError");
 const { getLatestSnapshot, saveSnapshot } = require("../../database/cotacoesRepository");
 const { getNowInBrasiliaISO } = require("../../utils/dateTime");
@@ -18,18 +19,21 @@ const SOURCES = {
   coamo: { label: SOURCE_LABELS.coamo, scraper: scrapeCoamo },
   cvale: { label: SOURCE_LABELS.cvale, scraper: scrapeCvale },
   lar: { label: SOURCE_LABELS.lar, scraper: scrapeLarAgro },
+  granos: { label: SOURCE_LABELS.granos, scraper: scrapeGranos },
 };
 
 const cache = {
   coamo: null,
   cvale: null,
   lar: null,
+  granos: null,
 };
 
 const inFlight = {
   coamo: null,
   cvale: null,
   lar: null,
+  granos: null,
 };
 
 // Converte valores do ambiente para booleano dentro das regras de coleta.
@@ -305,61 +309,72 @@ async function getLar(force = false) {
   return getSourceData("lar", force);
 }
 
-// Retorna as cotacoes atuais das tres fontes em uma unica chamada.
+// Atalho para retornar apenas a cotacao atual da Granos.
+async function getGranos(force = false) {
+  return getSourceData("granos", force);
+}
+
+// Retorna as cotacoes atuais das fontes oficiais em uma unica chamada.
 async function getAll(force = false) {
   const runInParallel = shouldCollectInParallel();
 
   if (force) {
     if (runInParallel) {
-      const [coamoData, cvaleData, larData] = await Promise.all([
+      const [coamoData, cvaleData, larData, granosData] = await Promise.all([
         collectSourceWithRetry("coamo", { triggerType: "manual" }),
         collectSourceWithRetry("cvale", { triggerType: "manual" }),
         collectSourceWithRetry("lar", { triggerType: "manual" }),
+        collectSourceWithRetry("granos", { triggerType: "manual" }),
       ]);
 
-      return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
+      return { coamo: coamoData, cvale: cvaleData, larAgro: larData, granos: granosData };
     }
 
     const coamoData = await collectSourceWithRetry("coamo", { triggerType: "manual" });
     const cvaleData = await collectSourceWithRetry("cvale", { triggerType: "manual" });
     const larData = await collectSourceWithRetry("lar", { triggerType: "manual" });
+    const granosData = await collectSourceWithRetry("granos", { triggerType: "manual" });
 
-    return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
+    return { coamo: coamoData, cvale: cvaleData, larAgro: larData, granos: granosData };
   }
 
   if (runInParallel) {
-    const [coamoData, cvaleData, larData] = await Promise.all([
+    const [coamoData, cvaleData, larData, granosData] = await Promise.all([
       getSourceData("coamo", false),
       getSourceData("cvale", false),
       getSourceData("lar", false),
+      getSourceData("granos", false),
     ]);
 
-    return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
+    return { coamo: coamoData, cvale: cvaleData, larAgro: larData, granos: granosData };
   }
 
   const coamoData = await getSourceData("coamo", false);
   const cvaleData = await getSourceData("cvale", false);
   const larData = await getSourceData("lar", false);
+  const granosData = await getSourceData("granos", false);
 
-  return { coamo: coamoData, cvale: cvaleData, larAgro: larData };
+  return { coamo: coamoData, cvale: cvaleData, larAgro: larData, granos: granosData };
 }
 
-// Retorna as tres fontes sem deixar uma falha derrubar a resposta inteira.
+// Retorna as fontes oficiais sem deixar uma falha derrubar a resposta inteira.
 async function getAllPartial(force = false) {
-  const [coamoResult, cvaleResult, larResult] = await Promise.allSettled([
+  const [coamoResult, cvaleResult, larResult, granosResult] = await Promise.allSettled([
     getPartialSourceData("coamo", force),
     getPartialSourceData("cvale", force),
     getPartialSourceData("lar", force),
+    getPartialSourceData("granos", force),
   ]);
 
   return {
     version: 2,
-    partial: [coamoResult, cvaleResult, larResult].some(
+    partial: [coamoResult, cvaleResult, larResult, granosResult].some(
       (result) => result.status === "rejected" || result.value.stale || result.value.error
     ),
     coamo: buildPartialSourceResponse("coamo", coamoResult),
     cvale: buildPartialSourceResponse("cvale", cvaleResult),
     larAgro: buildPartialSourceResponse("lar", larResult),
+    granos: buildPartialSourceResponse("granos", granosResult),
   };
 }
 
@@ -373,6 +388,7 @@ async function getCurrentQuotes(source = "all", force = false) {
       ...enrichQuotes("coamo", currentQuotes.coamo),
       ...enrichQuotes("cvale", currentQuotes.cvale),
       ...enrichQuotes("lar", currentQuotes.larAgro),
+      ...enrichQuotes("granos", currentQuotes.granos),
     ];
   }
 
@@ -386,12 +402,14 @@ async function refreshScheduled(slotLabel) {
   let coamoResult;
   let cvaleResult;
   let larResult;
+  let granosResult;
 
   if (shouldCollectInParallel()) {
-    [coamoResult, cvaleResult, larResult] = await Promise.allSettled([
+    [coamoResult, cvaleResult, larResult, granosResult] = await Promise.allSettled([
       collectSourceWithRetry("coamo", { triggerType: "scheduled", slotLabel }),
       collectSourceWithRetry("cvale", { triggerType: "scheduled", slotLabel }),
       collectSourceWithRetry("lar", { triggerType: "scheduled", slotLabel }),
+      collectSourceWithRetry("granos", { triggerType: "scheduled", slotLabel }),
     ]);
   } else {
     try {
@@ -423,6 +441,16 @@ async function refreshScheduled(slotLabel) {
     } catch (error) {
       larResult = { status: "rejected", reason: error };
     }
+
+    try {
+      const granosData = await collectSourceWithRetry("granos", {
+        triggerType: "scheduled",
+        slotLabel,
+      });
+      granosResult = { status: "fulfilled", value: granosData };
+    } catch (error) {
+      granosResult = { status: "rejected", reason: error };
+    }
   }
 
   return {
@@ -439,12 +467,21 @@ async function refreshScheduled(slotLabel) {
       larResult.status === "fulfilled"
         ? { ok: true, count: larResult.value.length }
         : { ok: false, error: larResult.reason.message },
+    granos:
+      granosResult.status === "fulfilled"
+        ? { ok: true, count: granosResult.value.length }
+        : { ok: false, error: granosResult.reason.message },
   };
 }
 
 // Faz a carga inicial do cache em memoria com os ultimos snapshots do banco.
 async function bootstrapCotacoesCache() {
-  await Promise.all([loadLatestToCache("coamo"), loadLatestToCache("cvale"), loadLatestToCache("lar")]);
+  await Promise.all([
+    loadLatestToCache("coamo"),
+    loadLatestToCache("cvale"),
+    loadLatestToCache("lar"),
+    loadLatestToCache("granos"),
+  ]);
   logger.sucesso("Carga inicial de cache concluida.");
 }
 
@@ -455,6 +492,7 @@ module.exports = {
   getCoamo,
   getCvale,
   getCurrentQuotes,
+  getGranos,
   getLar,
   normalizeRequestedSource,
   refreshScheduled,

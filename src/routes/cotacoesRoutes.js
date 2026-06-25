@@ -6,6 +6,7 @@ const {
   getComparisonBySource,
   getCvale,
   getFilteredQuotes,
+  getGranos,
   getAllPartial,
   getHistory,
   getHistoryByPeriod,
@@ -71,7 +72,16 @@ router.get(
   })
 );
 
-// Retorna as cotacoes atuais das tres fontes em uma resposta parcial por fonte.
+// Retorna as cotacoes atuais da Granos.
+router.get(
+  "/granos",
+  asyncHandler(async (req, res) => {
+    const dados = await getGranos(parseForce(req.query.force));
+    res.json(dados);
+  })
+);
+
+// Retorna as cotacoes atuais das fontes oficiais em uma resposta parcial por fonte.
 router.get(
   "/todos",
   asyncHandler(async (req, res) => {

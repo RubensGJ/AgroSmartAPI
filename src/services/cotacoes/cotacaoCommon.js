@@ -4,12 +4,13 @@ const SOURCE_LABELS = {
   coamo: "Coamo",
   cvale: "C.Vale",
   lar: "LAR",
+  granos: "Granos",
 };
 
 // Garante que a fonte recebida existe e devolve seu nome amigavel.
 function ensureSource(source) {
   if (!SOURCE_LABELS[source]) {
-    throw new AppError("Fonte invalida. Use: coamo, cvale, lar ou all.", 400);
+    throw new AppError("Fonte invalida. Use: coamo, cvale, lar, granos ou all.", 400);
   }
 
   return SOURCE_LABELS[source];

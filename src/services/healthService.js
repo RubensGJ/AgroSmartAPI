@@ -3,7 +3,7 @@ const { getLatestSnapshotsBySources } = require("../database/cotacoesRepository"
 const { getCotacaoSchedulerStatus } = require("../jobs/cotacaoScheduler");
 const { getChromeDiagnostics } = require("../utils/puppeteer");
 
-const EXPECTED_SOURCES = ["coamo", "cvale", "lar"];
+const EXPECTED_SOURCES = ["coamo", "cvale", "lar", "granos"];
 const FRESHNESS_THRESHOLD_HOURS = 24;
 
 function toIsoString(value) {

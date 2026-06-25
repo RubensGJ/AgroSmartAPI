@@ -4,6 +4,7 @@ const {
   getAllPartial,
   getCoamo,
   getCvale,
+  getGranos,
   getLar,
   refreshScheduled,
 } = require("./cotacoes/currentCotacaoService");
@@ -26,6 +27,7 @@ module.exports = {
   getComparisonBySource,
   getCvale,
   getFilteredQuotes,
+  getGranos,
   getHistory,
   getHistoryByPeriod,
   getLar,
