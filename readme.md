@@ -1,13 +1,13 @@
 # AgroSmart API
 
-API Node.js/Express para coletar, salvar e consultar cotacoes de graos das fontes Coamo, C.Vale e LAR.
+API Node.js/Express para coletar, salvar e consultar cotacoes de graos das fontes Coamo, C.Vale, LAR e Granos.
 
 A aplicacao usa Puppeteer para scraping, cache em memoria para respostas rapidas e Neon/Postgres para manter historico e ultimo snapshot valido por fonte.
 
 ## Funcionalidades
 
 - Coleta de cotacoes via scraping com Puppeteer.
-- Consulta atual por fonte: Coamo, C.Vale e LAR.
+- Consulta atual por fonte: Coamo, C.Vale, LAR e Granos.
 - Consulta consolidada com contrato parcial por fonte em `/api/cotacoes/todos`.
 - Filtros por grao, local, descricao, fornecedor e unidade.
 - Melhor preco, comparativo entre fontes, variacao historica e exportacao CSV.
@@ -90,6 +90,7 @@ Observacoes importantes:
 - `DATABASE_SSL=true` e recomendado para Neon.
 - `SCHEDULER_ENABLED=false` desliga coletas automaticas.
 - `SCRAPER_PARALLEL_COLLECTION=false` e mais conservador para ambientes pequenos.
+- `/api/cotacoes/todos` respeita `SCRAPER_PARALLEL_COLLECTION` mesmo usando resposta parcial por fonte.
 - `force=true` em rotas de consulta dispara scraping ao vivo, trafego externo e escrita no banco.
 
 ## Comandos
@@ -147,12 +148,13 @@ curl -H "Authorization: Bearer SEU_TOKEN" http://localhost:3000/api/cotacoes/tod
 
 ## Rotas de cotacoes
 
-Fontes aceitas em parametros: `all`, `coamo`, `cvale`, `lar`.
+Fontes aceitas em parametros: `all`, `coamo`, `cvale`, `lar`, `granos`.
 
 - `GET /api/cotacoes/coamo`: cotacoes atuais da Coamo.
 - `GET /api/cotacoes/cvale`: cotacoes atuais da C.Vale.
 - `GET /api/cotacoes/lar`: cotacoes atuais da LAR.
-- `GET /api/cotacoes/todos`: resposta consolidada das tres fontes.
+- `GET /api/cotacoes/granos`: cotacoes atuais da Granos.
+- `GET /api/cotacoes/todos`: resposta consolidada das fontes oficiais.
 - `GET /api/cotacoes/filtro`: cotacoes atuais filtradas.
 - `GET /api/cotacoes/melhor-preco`: maior preco encontrado para um grao.
 - `GET /api/cotacoes/comparativo`: comparativo entre fontes para um grao.
@@ -164,7 +166,7 @@ Fontes aceitas em parametros: `all`, `coamo`, `cvale`, `lar`.
 Parametros comuns:
 
 - `force=true`: ignora cache e tenta uma nova coleta.
-- `fonte=all|coamo|cvale|lar`: seleciona a origem quando a rota permite.
+- `fonte=all|coamo|cvale|lar|granos`: seleciona a origem quando a rota permite.
 - `grao`, `local`, `descricao`, `fornecedor`, `unidade`: filtros textuais.
 - `dataInicio=YYYY-MM-DD` e `dataFim=YYYY-MM-DD`: periodo historico.
 - `limit=50`: limite de snapshots ou itens, conforme a rota.
@@ -216,6 +218,12 @@ A rota consolidada nao deve derrubar a resposta inteira quando uma fonte falha. 
       "statusCode": 502,
       "details": null
     }
+  },
+  "granos": {
+    "ok": true,
+    "data": [],
+    "stale": false,
+    "error": null
   }
 }
 ```
@@ -248,7 +256,7 @@ Tabelas criadas automaticamente na subida:
 - `src/services/cotacoes/analysisCotacaoService.js`: filtros, melhor preco, comparativo e CSV.
 - `src/services/cotacoes/historyCotacaoService.js`: historico, periodo e variacao.
 - `src/services/healthService.js`: diagnostico operacional profundo.
-- `src/scrapers/`: scrapers Puppeteer de Coamo, C.Vale, LAR e fontes experimentais.
+- `src/scrapers/`: scrapers Puppeteer de Coamo, C.Vale, LAR, Granos e fontes experimentais.
 - `src/database/`: conexao, schema e repositorios Postgres.
 - `src/utils/`: normalizacao, filtros, datas, CSV e utilitarios do Puppeteer.
 - `src/jobs/cotacaoScheduler.js`: jobs automaticos de coleta.

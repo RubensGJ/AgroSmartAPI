@@ -1,12 +1,17 @@
-import puppeteer from "puppeteer";
+const AppError = require("../errors/AppError");
+const { criarLogger } = require("../logs/logger");
+const { getPuppeteerLaunchOptions, puppeteer } = require("../utils/puppeteer");
 
-export default async function scrapeGranos() {
+const logger = criarLogger("SCRAPER-GRANOS");
+
+async function scrapeGranos() {
   let browser;
+
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const url = "https://granoscorretora.com.br/cotacao-do-dia/";
+    logger.info("Iniciando navegador Puppeteer.");
+
+    browser = await puppeteer.launch(getPuppeteerLaunchOptions());
     const page = await browser.newPage();
 
     await page.setRequestInterception(true);
@@ -22,13 +27,13 @@ export default async function scrapeGranos() {
       }
     });
 
-    await page.goto("https://granoscorretora.com.br/cotacao-do-dia/", {
+    logger.info(`Acessando URL: ${url}`);
+    await page.goto(url, {
       waitUntil: "networkidle2",
       timeout: 60000,
     });
 
-    console.log("[Scraper] Granos: acessando URL: https://granoscorretora.com.br/cotacao-do-dia/");
-    console.log("[Scraper] Granos: Página carregada.");
+    logger.info("Pagina carregada.");
 
     const tableData = await page.evaluate(() => {
       const rows = Array.from(document.querySelectorAll("table tbody tr"));
@@ -60,11 +65,13 @@ export default async function scrapeGranos() {
         precos.forEach((item) => {
           if (item.valor && item.valor !== "0,00" && item.valor !== "" && !pricesMap[item.grao]) {
             pricesMap[item.grao] = {
+              fornecedor: "Granos Corretora",
               grao: item.grao,
+              descricao: "Sem descricao",
+              data_hora: dataHoraISO,
               preco: item.valor,
               unidade: "sc",
               local: cidade,
-              data_hora: dataHoraISO,
             };
           }
         });
@@ -73,14 +80,25 @@ export default async function scrapeGranos() {
       return Object.values(pricesMap);
     });
 
-    console.log(`[Scraper] Granos: cotações obtidas: ${tableData.length}`);
+    logger.sucesso(`Cotacoes obtidas com sucesso. Total: ${tableData.length}.`);
     return tableData;
   } catch (error) {
-    console.error("Erro no scrapeGranos:", error);
-    return [];
+    logger.erro("Erro ao coletar cotacoes da Granos.", error);
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    throw new AppError("Falha ao coletar cotacoes da Granos", 502, {
+      origem: "granos",
+      causa: error.message,
+    });
   } finally {
     if (browser) {
       await browser.close();
+      logger.info("Navegador encerrado.");
     }
   }
 }
+
+module.exports = scrapeGranos;
