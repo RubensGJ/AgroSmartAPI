@@ -7,7 +7,9 @@ info:
     com historico em banco e autenticacao por token.
 servers:
   - url: https://agrosmartapi.onrender.com
-    description: Ambiente de producao
+    description: Ambiente de producao - main
+  - url : https://agrosmartapi.onrender.com
+    description: Ambiente de homologacao - dev
   - url: http://localhost:3000
     description: Ambiente de desenvolvimento
 tags:
