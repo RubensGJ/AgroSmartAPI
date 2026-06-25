@@ -294,6 +294,22 @@ function buildPartialSourceResponse(source, result) {
   };
 }
 
+// Executa promises uma por vez e preserva o formato de Promise.allSettled.
+async function settleSequentially(tasks) {
+  const results = [];
+
+  for (const task of tasks) {
+    try {
+      const value = await task();
+      results.push({ status: "fulfilled", value });
+    } catch (error) {
+      results.push({ status: "rejected", reason: error });
+    }
+  }
+
+  return results;
+}
+
 // Atalho para retornar apenas a cotacao atual da Coamo.
 async function getCoamo(force = false) {
   return getSourceData("coamo", force);
@@ -359,12 +375,16 @@ async function getAll(force = false) {
 
 // Retorna as fontes oficiais sem deixar uma falha derrubar a resposta inteira.
 async function getAllPartial(force = false) {
-  const [coamoResult, cvaleResult, larResult, granosResult] = await Promise.allSettled([
-    getPartialSourceData("coamo", force),
-    getPartialSourceData("cvale", force),
-    getPartialSourceData("lar", force),
-    getPartialSourceData("granos", force),
-  ]);
+  const tasks = [
+    () => getPartialSourceData("coamo", force),
+    () => getPartialSourceData("cvale", force),
+    () => getPartialSourceData("lar", force),
+    () => getPartialSourceData("granos", force),
+  ];
+
+  const [coamoResult, cvaleResult, larResult, granosResult] = shouldCollectInParallel()
+    ? await Promise.allSettled(tasks.map((task) => task()))
+    : await settleSequentially(tasks);
 
   return {
     version: 2,

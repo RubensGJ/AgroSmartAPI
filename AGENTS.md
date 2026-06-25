@@ -34,6 +34,7 @@ O codigo principal fica em `src/`.
 - `GET /health/deep` e o health operacional completo. Ele verifica Neon/Postgres, snapshots recentes de `coamo`, `cvale`, `lar` e `granos`, frescor de 24h, Chrome do Puppeteer e scheduler. Deve retornar `ok`, `degraded` ou `fail`, sem executar scraping e sem expor segredos.
 - Consultas sem `force=true` devem priorizar cache em memoria, depois `cotacoes_ultima`, e so entao scraping.
 - Consultas com `force=true` podem iniciar navegador, gerar trafego externo e escrever no banco. Trate isso como operacao sensivel.
+- Fluxos consolidados como `GET /api/cotacoes/todos` devem respeitar `SCRAPER_PARALLEL_COLLECTION`; se a flag estiver falsa, colete as fontes sequencialmente, mesmo quando o contrato permitir resposta parcial.
 - Coletas bem-sucedidas salvam em `cotacoes_historico`, atualizam `cotacoes_ultima` e atualizam cache.
 - Coletas com erro, payload invalido ou payload vazio nao devem salvar novo snapshot.
 - Fontes validas em parametros: `all`, `coamo`, `cvale`, `lar`, `granos`.

@@ -90,6 +90,7 @@ Observacoes importantes:
 - `DATABASE_SSL=true` e recomendado para Neon.
 - `SCHEDULER_ENABLED=false` desliga coletas automaticas.
 - `SCRAPER_PARALLEL_COLLECTION=false` e mais conservador para ambientes pequenos.
+- `/api/cotacoes/todos` respeita `SCRAPER_PARALLEL_COLLECTION` mesmo usando resposta parcial por fonte.
 - `force=true` em rotas de consulta dispara scraping ao vivo, trafego externo e escrita no banco.
 
 ## Comandos
