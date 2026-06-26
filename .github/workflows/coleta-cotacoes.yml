@@ -14,7 +14,7 @@ concurrency:
 jobs:
   disparar-coleta:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
       API_TOKEN: ${{ secrets.API_TOKEN }}
@@ -39,7 +39,7 @@ jobs:
           curl -fsS \
             --retry 4 \
             --retry-all-errors \
-            --max-time 180 \
+            --max-time 360 \
             -H "Authorization: Bearer $API_TOKEN" \
             "$URL"
 
